@@ -7,65 +7,38 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ApplicantsController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\DepartmentsController;
-use Illuminate\Support\Facades\Storage;
-use App\Http\Controllers\CardLayoutController;
 use App\Http\Controllers\AnalyticsController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+/* |-------------------------------------------------------------------------- | API Routes |-------------------------------------------------------------------------- */
 
+// Public / Auth Routes
+Route::post('/login', [AuthController::class , 'login'])->name('login');
+Route::post('/register', [AuthController::class , 'register'])->name('register');
 
-Route::get('/proxy-image', function (Request $request) {
-    $path = $request->query('path');
-    if (!Storage::disk('public')->exists($path)) return response()->json(['error' => 'File not found'], 404);
-    
-    return Storage::disk('public')->response($path);
-});
+// Public ID Application Submission
+Route::post('/students', [ApplicantsController::class , 'store'])->name('applicants.store');
 
-Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::post('/register', [AuthController::class, 'register'])->name('register');
-Route::post('/students', [ApplicantsController::class, 'store'])->name('applicants.store');
+// Public ID Number Verification
+Route::post('/reports/verify', [ReportsController::class , 'verifyIdNumber']);
 
-Route::resource('users', UsersController::class);
-Route::get('/get-departments', [DepartmentsController::class, 'getApplicantsByDepartments']);
-Route::post('/reports/verify', [ReportsController::class, 'verifyIdNumber']);
+// Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
-    
-    Route::get('/students', [ApplicantsController::class, 'index']);
-    
-    Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/total-applicants', [ApplicantsController::class, 'applicantsReport']);
+    // User Context
+    Route::get('/user', function (Request $request) {
+            return $request->user();
+        }
+        );
 
-    Route::get('/paginated-applicants', [ApplicantsController::class, 'paginatedApplicants']);
-    Route::get('/all-imported-reports', [ReportsController::class, 'getImportedReports']);
-    
-    Route::put('/applicant/{student}/toggle', [ApplicantsController::class, 'toggleHasCard']);
-    Route::post('/confirm-applicant/{studentId}', [ApplicantsController::class, 'updateApplicantsExcelFile']);
-    Route::post('/confirm/{studentId}', [ApplicantsController::class, 'confirm']);
+        Route::post('/logout', [AuthController::class , 'logout']);
 
-    Route::get('/analytics/dashboard', [AnalyticsController::class, 'getDashboardStats']);
+        // Admin Analytics & Dashboard
+        Route::get('/analytics/dashboard', [AnalyticsController::class , 'getDashboardStats']);
+        Route::get('/get-departments', [DepartmentsController::class , 'getApplicantsByDepartments']);
 
-    // FOR ID CARD DESIGNER
+        // Report Management
+        Route::post('/import', [ReportsController::class , 'import']);
+        Route::get('/all-imported-reports', [ReportsController::class , 'getImportedReports']);
 
-    Route::prefix('card-layouts')->group(function () {
-        Route::get('/', [CardLayoutController::class, 'index']);
-        Route::post('/', [CardLayoutController::class, 'store']);
-        Route::put('/{id}', [CardLayoutController::class, 'update']);
-        Route::delete('/{id}', [CardLayoutController::class, 'destroy']);
-        Route::post('/{id}/duplicate', [CardLayoutController::class, 'duplicate']);
-    });
-
-    Route::get('/applicants/{id}/card-preview', [ApplicantsController::class, 'getPreview']);
-
-    Route::post('/import', [ReportsController::class, 'import']);
-
-    Route::middleware('role:admin')
-        ->prefix('admin')
-        ->group(function () {
-            // Route::get('/applications', [AdminApplicationController::class, 'index']);
-            // Route::get('/applications/{id}', [AdminApplicationController::class, 'show']);
-            // Route::put('/applications/{id}/approve', [AdminApplicationController::class, 'approve']);
-        });
-});
+        // User Management
+        Route::resource('users', UsersController::class);    });

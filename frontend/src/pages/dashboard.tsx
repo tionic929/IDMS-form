@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { fetchDashboardData, exportDashboardAsCSV, type DashboardFilters } from '@/api/analytics';
 import { type DashboardData } from '@/types/analytics';
-import { type Students } from '@/types/students';
 import MetricCard from '@/components/SubComponents/MetricCard';
 import { VelocityChart } from '@/components/Charts/VelocityChart';
 import { DistributionChart } from '@/components/Charts/DistributionChart';
@@ -28,7 +27,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useStudents } from '@/context/StudentContext';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
 
 const ErrorBoundary = ({ error, retry }: { error: any; retry: () => void }) => (
@@ -144,7 +142,6 @@ const DepartmentFilter = ({ departments, selectedDept, onChange }: { departments
 };
 
 const Dashboard = () => {
-  const { allStudents, loading: studentsLoading } = useStudents();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -248,13 +245,6 @@ const Dashboard = () => {
       [metric]: !prev[metric],
     }));
   };
-
-  const recentStudents = useMemo(() => {
-    if (!allStudents) return [];
-    return [...allStudents]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5);
-  }, [allStudents]);
 
   if (error) {
     return (
@@ -461,61 +451,6 @@ const Dashboard = () => {
                 />
               </div>
             </div>
-
-            <div className="flex items-center gap-4 mb-5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Recent Students</span>
-              <div className="flex-1 h-px bg-slate-200" />
-            </div>
-
-            <Card className="border-slate-200 overflow-hidden shadow-sm shadow-slate-100">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto text-slate-900 font-sans">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID Number</th>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Joined</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {studentsLoading ? (
-                        [...Array(5)].map((_, i) => (
-                          <tr key={i} className="animate-pulse">
-                            <td className="px-6 py-4"><div className="h-4 w-32 bg-slate-50 rounded" /></td>
-                            <td className="px-6 py-4"><div className="h-4 w-24 bg-slate-50 rounded" /></td>
-                            <td className="px-6 py-4"><div className="h-4 w-16 bg-slate-50 rounded" /></td>
-                          </tr>
-                        ))
-                      ) : recentStudents.length > 0 ? (
-                        recentStudents.map((student: Students) => (
-                          <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
-                                  {student.first_name[0]}{student.last_name[0]}
-                                </div>
-                                <span className="text-xs font-bold text-slate-700">{student.first_name} {student.last_name}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-xs font-medium text-slate-500">{student.id_number}</td>
-                            <td className="px-6 py-4 text-[10px] font-bold text-primary uppercase">
-                              {new Date(student.created_at).toLocaleDateString()}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={3} className="px-6 py-12 text-center text-xs font-bold text-slate-300 uppercase italic">
-                            No recent activity found
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
           </>
         ) : null}
 
@@ -539,12 +474,6 @@ const Dashboard = () => {
         open={!!metricModal}
         onClose={() => setMetricModal(null)}
         meta={metricModal}
-      />
-      <VelocityDetailModal
-        open={velocityModalOpen}
-        onClose={() => setVelocityModalOpen(false)}
-        data={data?.trends ?? []}
-        auditLog={allStudents || []}
       />
       <TallyDetailModal
         open={tallyModalOpen}

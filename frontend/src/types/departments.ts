@@ -1,19 +1,16 @@
-import { type Students } from "./students";
-
 export interface DepartmentSidebarItem {
     department: string;
     applicant_count: number;
 }
 
-export interface DepartmentDetailsResponse{
+export interface DepartmentDetailsResponse {
     success: boolean;
     selected_department: string;
-    students: Students[];
     sidebar: DepartmentSidebarItem[];
     pagination: DepartmentsPaginatedResponse;
 }
 
-export interface DepartmentsPaginatedResponse{
+export interface DepartmentsPaginatedResponse {
     current_page: number;
     last_page: number;
     total: number;

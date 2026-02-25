@@ -12,17 +12,9 @@ import Header from './layout/header';
 
 // Lazy Load Admin Components
 // Administrative Components
-import CardDesignerPage from "./components/CardDesignerPage";
 import Dashboard from "./pages/dashboard";
-import ApplicantsIndex from "./pages/Admin/Applicants/ApplicantsIndex";
 import ImportReports from "./pages/Admin/Reports/importReports";
 import DepartmentList from "./pages/Admin/Departments/DepartmentsIndex";
-import CardManagement from "./pages/cardManagement";
-
-import DesignerWorkspace from "./components/DesignerWorkspace";
-import { StudentProvider } from "./context/StudentContext";
-import { TemplateProvider } from "./context/TemplateContext";
-
 
 // Lazy Load Other Pages
 const ProfileDetails = lazy(() => import("./pages/profileDetails"));
@@ -91,74 +83,36 @@ function App() {
 
               <Route element={<ProtectedRoute />}>
                 <Route
+                  path="/dashboard"
                   element={
-                    <StudentProvider>
-                      <TemplateProvider>
-                        <Outlet />
-                      </TemplateProvider>
-                    </StudentProvider>
+                    <RoleGuard allowedRoles={['admin']}>
+                      <Dashboard />
+                    </RoleGuard>
                   }
-                >
-
-                  <Route
-                    path="/card-management"
-                    element={
-                      <RoleGuard allowedRoles={['admin']}>
-                        <CardManagement />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/card-designer"
-                    element={
-                      <RoleGuard allowedRoles={['admin']}>
-                        <CardDesignerPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <RoleGuard allowedRoles={['admin']}>
-                        <Dashboard />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/departments"
-                    element={
-                      <RoleGuard allowedRoles={['admin']}>
-                        <DepartmentList />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/applicants"
-                    element={
-                      <RoleGuard allowedRoles={['admin']}>
-                        <ApplicantsIndex />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/reports/import"
-                    element={
-                      <RoleGuard allowedRoles={['admin']}>
-                        <ImportReports />
-                      </RoleGuard>
-                    }
-                  />
-                </Route>
+                />
+                <Route
+                  path="/departments"
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <DepartmentList />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/reports/import"
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <ImportReports />
+                    </RoleGuard>
+                  }
+                />
               </Route>
-
-
-
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
         </main>
       </div>
-    </div>
+    </div >
   );
 };
 

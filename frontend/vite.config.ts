@@ -17,6 +17,12 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
+      '/bridge': {
+        target: 'https://glacial-samiyah-presutural.ngrok-free.dev',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/bridge/, ''),
+      },
     },
     host: true,
     port: 5173,

@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getDepartmentsWithStudents } from '@/api/departments';
-import { getFullName } from '@/types/students';
 import {
   Loader2, Users, GraduationCap, MapPin, Search,
   CheckCircle2, AlertCircle,
@@ -112,7 +111,6 @@ const DepartmentList: React.FC = () => {
   });
 
   const sidebarDepts = (data?.sidebar ? (Array.isArray(data.sidebar) ? data.sidebar : [data.sidebar]) : []) as DepartmentSidebarItem[];
-  const students = data?.students || [];
   const selectedDeptObj = sidebarDepts.find(d => d.department === selectedDeptName);
 
   const globalTotal = sidebarDepts.reduce((acc, d) => acc + d.applicant_count, 0);
@@ -278,14 +276,6 @@ const DepartmentList: React.FC = () => {
                   trend="neutral"
                   trendLabel="Active Records"
                 />
-                <MetricCard
-                  icon={ShieldCheck}
-                  title="ID Coverage"
-                  value={`${students.length > 0 ? Math.round((students.filter((s: any) => s.has_card).length / students.length) * 100) : 0}%`}
-                  color="emerald"
-                  trend="up"
-                  trendLabel="Unit Completion"
-                />
 
                 <Card className="bg-primary/95 overflow-hidden border-none text-white shadow-lg shadow-primary/20 rounded-[2rem] relative group cursor-default">
                   <CardContent className="p-8 flex flex-col justify-center h-full">
@@ -308,117 +298,40 @@ const DepartmentList: React.FC = () => {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Listing Log</span>
               <div className="flex-1 h-px bg-slate-200" />
             </div>
-
-            <Card className="border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm shadow-slate-100 bg-white">
-              <div className="relative overflow-hidden flex flex-col">
-                {(isFetching && isPlaceholderData) && (
-                  <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
-                    <Loader2 className="animate-spin text-primary" size={32} />
-                  </div>
-                )}
-
-                <div className="overflow-x-auto text-slate-900 font-sans">
-                  <Table>
-                    <TableHeader className="bg-slate-50/80 border-b border-slate-100">
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="pl-8 w-[150px] text-[10px] font-bold text-slate-400 uppercase tracking-widest py-4">ID Number</TableHead>
-                        <TableHead className="w-[280px] text-[10px] font-bold text-slate-400 uppercase tracking-widest py-4">Identity</TableHead>
-                        <TableHead className="text-center w-[120px] text-[10px] font-bold text-slate-400 uppercase tracking-widest py-4">Status</TableHead>
-                        <TableHead className="text-[10px] font-bold text-slate-400 uppercase tracking-widest py-4">Location</TableHead>
-                        <TableHead className="text-right pr-8 w-[120px] text-[10px] font-bold text-slate-400 uppercase tracking-widest py-4">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading && !sidebarDepts.length ? (
-                        [...Array(10)].map((_, i) => <TableRowSkeleton key={i} />)
-                      ) : students.length > 0 ? (
-                        students.map((s: any) => (
-                          <TableRow key={s.id} className="group hover:bg-slate-50/50 transition-colors border-b border-slate-50 last:border-0">
-                            <TableCell className="pl-8 font-mono text-[11px] font-bold text-primary">{s.id_number}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-primary text-[11px] font-bold border border-primary/10">
-                                  {s.first_name[0]}{s.last_name[0]}
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-xs font-bold text-slate-700">{getFullName(s)}</span>
-                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter opacity-70">{s.course}</span>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className={cn(
-                                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border",
-                                s.has_card
-                                  ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                                  : "bg-red-50 text-red-600 border-red-100"
-                              )}>
-                                <div className={cn("h-1.5 w-1.5 rounded-full", s.has_card ? "bg-emerald-500" : "bg-red-500")} />
-                                {s.has_card ? "Issued" : "No ID"}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-slate-600 truncate max-w-[200px]">{s.guardian_name}</span>
-                                <span className="text-[9px] text-slate-400 flex items-center gap-1 font-medium italic opacity-80">
-                                  <MapPin size={9} /> {s.address || 'Location Unknown'}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right pr-8">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10 transition-all active:scale-90">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="h-80 text-center text-slate-300 text-[11px] font-black uppercase tracking-[0.3em] bg-slate-50/20 italic">
-                            No records found in this unit directory
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+            {/* FOOTER / PAGINATION */}
+            <div className="bg-slate-50/50 px-10 py-5 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {isFetching ? 'Synchronizing records...' : 'Systems nominal'}
+                </span>
+                <div className="h-1 w-1 rounded-full bg-slate-200" />
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                  {data?.pagination?.total || 0} Records Found
+                </span>
               </div>
-
-              {/* FOOTER / PAGINATION */}
-              <div className="bg-slate-50/50 px-10 py-5 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {isFetching ? 'Synchronizing records...' : 'Systems nominal'}
-                  </span>
-                  <div className="h-1 w-1 rounded-full bg-slate-200" />
-                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                    {data?.pagination?.total || 0} Records Found
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={!prevCursor || isFetching}
-                    onClick={handlePrev}
-                    className="h-10 w-10 border-slate-200 bg-white hover:text-primary hover:border-primary/30 transition-all shadow-sm rounded-xl"
-                  >
-                    <ChevronLeft size={18} />
-                  </Button>
-                  <Button
-                    variant="default"
-                    disabled={!hasMore || isFetching}
-                    onClick={handleNext}
-                    className="h-10 px-8 gap-2 font-black text-[10px] uppercase tracking-widest bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 rounded-xl"
-                  >
-                    Next Page <ChevronRight size={16} />
-                  </Button>
-                </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={!prevCursor || isFetching}
+                  onClick={handlePrev}
+                  className="h-10 w-10 border-slate-200 bg-white hover:text-primary hover:border-primary/30 transition-all shadow-sm rounded-xl"
+                >
+                  <ChevronLeft size={18} />
+                </Button>
+                <Button
+                  variant="default"
+                  disabled={!hasMore || isFetching}
+                  onClick={handleNext}
+                  className="h-10 px-8 gap-2 font-black text-[10px] uppercase tracking-widest bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 rounded-xl"
+                >
+                  Next Page <ChevronRight size={16} />
+                </Button>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
-      </main>
+      </main >
 
       <style>{`
         .scrollbar-none::-webkit-scrollbar {
@@ -442,7 +355,7 @@ const DepartmentList: React.FC = () => {
           background: #cbd5e1;
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 

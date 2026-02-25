@@ -11,14 +11,11 @@ import {
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { DashboardModal } from './DashboardModal';
 import type { TrendData } from '../../types/analytics';
-import type { Students } from '../../types/students';
-
 export const VelocityDetailModal: React.FC<{
     open: boolean;
     onClose: () => void;
     data: TrendData[];
-    auditLog?: Students[];
-}> = ({ open, onClose, data, auditLog }) => {
+}> = ({ open, onClose, data }) => {
     const stats = useMemo(() => {
         if (!data?.length) return null;
         const vals = data.map(d => d.count);
@@ -166,46 +163,6 @@ export const VelocityDetailModal: React.FC<{
                     </tbody>
                 </table>
             </div>
-            {/* Audit Log (if provided) */}
-            {auditLog && auditLog.length > 0 && (
-                <div className="mt-12 space-y-6">
-                    <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Data Audit Log</span>
-                        <div className="flex-1 h-px bg-slate-100" />
-                    </div>
-
-                    <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b border-slate-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-[9px] font-black uppercase tracking-widest text-slate-400">Identity</th>
-                                    <th className="px-6 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest">ID Code</th>
-                                    <th className="px-6 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Unit</th>
-                                    <th className="px-6 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {auditLog.slice(0, 10).map((s) => (
-                                    <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-3.5">
-                                            <div className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">{s.first_name} {s.last_name}</div>
-                                        </td>
-                                        <td className="px-6 py-3.5">
-                                            <div className="text-[11px] font-mono font-bold text-primary">{s.id_number}</div>
-                                        </td>
-                                        <td className="px-6 py-3.5">
-                                            <div className="text-[10px] font-black text-slate-400 uppercase">{s.course}</div>
-                                        </td>
-                                        <td className="px-6 py-3.5">
-                                            <div className="text-[10px] font-bold text-slate-500">{new Date(s.created_at).toLocaleDateString()}</div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
         </DashboardModal>
     );
 };

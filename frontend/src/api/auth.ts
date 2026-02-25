@@ -1,8 +1,8 @@
 import api, { getCsrfCookie } from "./axios";
 
 export const apiLogin = async (email: string, password: string) => {
-    await getCsrfCookie();  // ✅ Clean and correct
-    return await api.post("/login", {email, password});
+    await getCsrfCookie();
+    return await api.post("/login", { email, password });
 }
 
 export const fetchUser = async () => {
