@@ -88,7 +88,6 @@ const SubmitDetails: React.FC = () => {
 
       await axios.post(`/bridge/application-submit`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           'ngrok-skip-browser-warning': 'true'
         }
       });

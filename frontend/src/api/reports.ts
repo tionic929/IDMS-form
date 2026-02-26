@@ -9,9 +9,7 @@ export const verifyIdNumber = async (id_number: string) => {
 }
 
 export const importReports = async (formData: FormData) => {
-    const request = await api.post('/import', formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-    });
+    const request = await api.post('/import', formData);
     return request.data;
 }
 

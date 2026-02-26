@@ -19,6 +19,8 @@ import DepartmentList from "./pages/Admin/Departments/DepartmentsIndex";
 // Lazy Load Other Pages
 const ProfileDetails = lazy(() => import("./pages/profileDetails"));
 const Instructions = lazy(() => import("./pages/instructions"));
+const Settings = lazy(() => import("./pages/Admin/Settings/Settings"));
+const History = lazy(() => import("./pages/Admin/History/History"));
 
 
 // Simple loading fallback for lazy components
@@ -103,6 +105,22 @@ function App() {
                   element={
                     <RoleGuard allowedRoles={['admin']}>
                       <ImportReports />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/history/logs"
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <History />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <RoleGuard allowedRoles={['admin']}>
+                      <Settings />
                     </RoleGuard>
                   }
                 />
