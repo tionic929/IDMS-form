@@ -86,7 +86,7 @@ const SubmitDetails: React.FC = () => {
         if (value !== null) formData.append(key, value as string | Blob);
       });
 
-      await axios.post(`${LOCAL_BRIDGE_URL}/bridge/application-submit`, formData, {
+      await axios.post(`${LOCAL_BRIDGE_URL}/application-submit`, formData, {
         headers: {
           'ngrok-skip-browser-warning': 'true'
         }
