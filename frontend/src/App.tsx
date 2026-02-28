@@ -4,7 +4,6 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Sidebar from "./layout/sidebar";
 import Welcome from './pages/welcome';
 import Login from './pages/auth/login';
-import Register from './pages/auth/register';
 import { useAuth, type User } from './context/AuthContext';
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
@@ -77,10 +76,6 @@ function App() {
               <Route
                 path="/login"
                 element={user ? <Navigate to="/dashboard" replace /> : <Login />}
-              />
-              <Route
-                path="/register"
-                element={user ? <Navigate to="/dashboard" replace /> : <Register />}
               />
 
               <Route element={<ProtectedRoute />}>

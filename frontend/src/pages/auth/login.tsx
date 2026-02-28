@@ -183,10 +183,6 @@ const Login: React.FC = () => {
                     </>
                   )}
                 </Button>
-
-                <p className="text-center text-[10px] text-muted-foreground font-medium pt-4">
-                  New personnel? <Link to="/register" className="text-primary font-black hover:underline underline-offset-4 tracking-[0.1em]">Create Access Request</Link>
-                </p>
               </form>
             </div>
           </CardContent>

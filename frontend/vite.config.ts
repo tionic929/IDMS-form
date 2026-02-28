@@ -12,7 +12,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://dashboard-ncnian-id.svizcarra.online',
+        // target: 'https://dashboard-ncnian-id.svizcarra.online',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
@@ -29,6 +30,7 @@ export default defineConfig({
     strictPort: true,
   },
   optimizeDeps: {
+    include: ['react-signature-canvas'],
     exclude: ['@imgly/background-removal']
   },
   base: '/',

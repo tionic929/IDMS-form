@@ -60,6 +60,10 @@
 }
 
 @layer base {
+  :root {
+    scrollbar-gutter: stable;
+  }
+
   * {
     @apply border-border;
   }

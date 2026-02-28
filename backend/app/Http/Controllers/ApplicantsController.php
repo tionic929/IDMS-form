@@ -24,9 +24,6 @@ class ApplicantsController extends Controller
 
             $validated = $request->validate([
                 'idNumber' => 'required|string|max:255',
-                'firstName' => 'required|string|max:255',
-                'middleInitial' => 'nullable|string|max:1',
-                'lastName' => 'required|string|max:255',
                 'course' => 'required|string|max:255',
                 'address' => 'required|string',
                 'guardianName' => 'required|string|max:255',
@@ -34,6 +31,15 @@ class ApplicantsController extends Controller
                 'id_picture' => 'nullable|file|mimes:jpeg,png,jpg,webp',
                 'signature_picture' => 'nullable|image|mimes:jpeg,png,jpg,webp',
             ]);
+
+            // Security Lookup: Retrieve official names from the central registry
+            $student_record = \App\Models\Items::where('id_number', $validated['idNumber'])->first();
+
+            if (!$student_record) {
+                return response()->json([
+                    'message' => 'Profile authentication failed. Your ID number was not found in our registry. Please contact the Registrar Office.',
+                ], 422);
+            }
 
             $idPath = null;
             if ($request->hasFile('id_picture')) {
@@ -47,9 +53,9 @@ class ApplicantsController extends Controller
 
             $student = Student::create([
                 'id_number' => strtoupper($validated['idNumber']),
-                'first_name' => strtoupper($validated['firstName']),
-                'middle_initial' => strtoupper($validated['middleInitial'] ?? ''),
-                'last_name' => strtoupper($validated['lastName']),
+                'first_name' => strtoupper($student_record->first_name),
+                'middle_initial' => strtoupper(substr($student_record->middle_name ?? '', 0, 1)),
+                'last_name' => strtoupper($student_record->last_name),
                 'course' => strtoupper($validated['course']),
                 'address' => strtoupper($validated['address']),
                 'guardian_name' => strtoupper($validated['guardianName']),

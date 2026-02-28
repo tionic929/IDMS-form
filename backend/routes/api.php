@@ -13,7 +13,6 @@ use App\Http\Controllers\AnalyticsController;
 
 // Public / Auth Routes
 Route::post('/login', [AuthController::class , 'login'])->name('login');
-Route::post('/register', [AuthController::class , 'register'])->name('register');
 
 // Public ID Application Submission
 Route::post('/students', [ApplicantsController::class , 'store'])->name('applicants.store');
@@ -41,4 +40,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/all-imported-reports', [ReportsController::class , 'getImportedReports']);
 
         // User Management
-        Route::resource('users', UsersController::class);    });
+        Route::resource('users', UsersController::class);
+    });
