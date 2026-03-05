@@ -129,7 +129,11 @@ const SubmitDetails: React.FC = () => {
   const [rawSigPoints, setRawSigPoints] = useState<any[]>([]);
   const sigPad = React.useRef<any>(null);
 
-  const isFormIncomplete = !form.idNumber || !form.email || !form.id_picture || !form.signature_picture;
+  const isStep1Valid = verificationStatus === 'valid' && isEmailVerified;
+  const isStep2Valid = form.address.trim().length >= 5 && form.guardianName.trim().length >= 3 && form.guardianContact.trim().length >= 8;
+  const isStep3Valid = form.id_picture !== null && form.signature_picture !== null;
+
+  const isFormIncomplete = !isStep1Valid || !isStep2Valid || !isStep3Valid;
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'id_picture' | 'signature_picture') => {
@@ -301,16 +305,19 @@ const SubmitDetails: React.FC = () => {
   }, [inputCode, generatedCode]);
 
   useEffect(() => {
+    // Reset all verification states when ID number changes
+    setVerificationStatus('idle');
+    setIsEmailVerified(false);
+    setIsCodeSent(false);
+    setGeneratedCode(null);
+    setInputCode('');
+
     if (form.idNumber.length >= 8) {
       const delayDebounceFn = setTimeout(async () => {
         setIsVerifying(true);
         try {
-          const response = await verifyIdNumber(form.idNumber);
+          await verifyIdNumber(form.idNumber);
           setVerificationStatus('valid');
-          setForm(prev => ({
-            ...prev,
-            course: response.course || prev.course
-          }));
         } catch (err) {
           setVerificationStatus('invalid');
           setErrorMessage('School ID not found in registry');
@@ -319,6 +326,7 @@ const SubmitDetails: React.FC = () => {
       return () => clearTimeout(delayDebounceFn);
     }
   }, [form.idNumber]);
+
 
   return (
     <div className="min-h-screen bg-white font-sans text-zinc-900 pb-20 selection:bg-[#001f3f]/10">
@@ -474,6 +482,7 @@ const SubmitDetails: React.FC = () => {
                         label="Full Residence Address"
                         value={form.address}
                         onChange={(v: string) => setForm({ ...form, address: v })}
+                        status={form.address.length > 0 ? (form.address.length >= 5 ? 'valid' : 'invalid') : 'idle'}
                       />
 
                       <div className="space-y-6">
@@ -481,11 +490,13 @@ const SubmitDetails: React.FC = () => {
                           label="Full Name of Guardian"
                           value={form.guardianName}
                           onChange={(v: string) => setForm({ ...form, guardianName: v })}
+                          status={form.guardianName.length > 0 ? (form.guardianName.length >= 3 ? 'valid' : 'invalid') : 'idle'}
                         />
                         <FloatingLabelInput
                           label="Guardian Contact No."
                           value={form.guardianContact}
                           onChange={(v: string) => setForm({ ...form, guardianContact: v })}
+                          status={form.guardianContact.length > 0 ? (form.guardianContact.length >= 8 ? 'valid' : 'invalid') : 'idle'}
                         />
                       </div>
                     </CardContent>
@@ -624,10 +635,11 @@ const SubmitDetails: React.FC = () => {
                   <Button
                     type="button"
                     onClick={() => {
-                      if (currentStep === 1 && (verificationStatus !== 'valid' || !isEmailVerified)) return;
+                      if (currentStep === 1 && !isStep1Valid) return;
+                      if (currentStep === 2 && !isStep2Valid) return;
                       setCurrentStep(prev => prev + 1);
                     }}
-                    disabled={currentStep === 1 && (verificationStatus !== 'valid' || !isEmailVerified)}
+                    disabled={(currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)}
                     className="flex-1 h-16 rounded-full bg-primary hover:bg-primary/90 text-white font-black text-xs tracking-[0.2em] transition-all shadow-xl shadow-navy-900/10 active:scale-95 uppercase"
                   >
                     Continue

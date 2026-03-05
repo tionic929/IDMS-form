@@ -24,13 +24,12 @@ class ApplicantsController extends Controller
 
             $validated = $request->validate([
                 'idNumber' => 'required|string|max:255',
-                'course' => 'required|string|max:255',
                 'email' => 'required|email|max:255',
-                'address' => 'required|string',
-                'guardianName' => 'required|string|max:255',
-                'guardianContact' => 'required|string|max:20',
-                'id_picture' => 'nullable|file|mimes:jpeg,png,jpg,webp',
-                'signature_picture' => 'nullable|image|mimes:jpeg,png,jpg,webp',
+                'address' => 'required|string|min:5',
+                'guardianName' => 'required|string|max:255|min:3',
+                'guardianContact' => 'required|string|max:20|min:8',
+                'id_picture' => 'required|file|mimes:jpeg,png,jpg,webp',
+                'signature_picture' => 'required|image|mimes:jpeg,png,jpg,webp',
             ]);
 
             // Security Lookup: Retrieve official names from the central registry
@@ -58,7 +57,7 @@ class ApplicantsController extends Controller
                 'middle_initial' => strtoupper(substr($student_record->middle_name ?? '', 0, 1)),
                 'last_name' => strtoupper($student_record->last_name),
                 'email' => strtolower($validated['email']),
-                'course' => strtoupper($validated['course']),
+                'course' => strtoupper($student_record->course),
                 'address' => strtoupper($validated['address']),
                 'guardian_name' => strtoupper($validated['guardianName']),
                 'guardian_contact' => $validated['guardianContact'],

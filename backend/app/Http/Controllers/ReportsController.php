@@ -34,7 +34,6 @@ class ReportsController extends Controller
         return response()->json([
             'valid' => true,
             'message' => 'Student record found!',
-            'course' => $record->course,
         ], 200);
     }
 
