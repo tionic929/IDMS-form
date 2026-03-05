@@ -11,11 +11,11 @@ class Applicant extends Model
     use HasFactory;
 
     protected $table = 'students';
-    
+
     protected $casts = [
         'has_card' => 'boolean',
     ];
-    
+
     protected $fillable = [
         'has_card',
         'id_number',
@@ -24,6 +24,7 @@ class Applicant extends Model
         'last_name',
         'course',
         'address',
+        'email',
         'guardian_name',
         'guardian_contact',
         'id_picture',

@@ -25,6 +25,7 @@ class ApplicantsController extends Controller
             $validated = $request->validate([
                 'idNumber' => 'required|string|max:255',
                 'course' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
                 'address' => 'required|string',
                 'guardianName' => 'required|string|max:255',
                 'guardianContact' => 'required|string|max:20',
@@ -56,6 +57,7 @@ class ApplicantsController extends Controller
                 'first_name' => strtoupper($student_record->first_name),
                 'middle_initial' => strtoupper(substr($student_record->middle_name ?? '', 0, 1)),
                 'last_name' => strtoupper($student_record->last_name),
+                'email' => strtolower($validated['email']),
                 'course' => strtoupper($validated['course']),
                 'address' => strtoupper($validated['address']),
                 'guardian_name' => strtoupper($validated['guardianName']),

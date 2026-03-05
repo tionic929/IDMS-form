@@ -7,8 +7,9 @@ import {
   Camera, FileCheck, CheckCircle2, ShieldCheck,
   AlertCircle, UploadCloud, RefreshCw, Zap,
   Contact, MapPin, Sparkles, Pencil, Trash2, Maximize2,
-  ChevronRight, Info, HelpCircle
+  ChevronRight, Info, HelpCircle, Mail, KeyIcon
 } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 import nclogo from '@/assets/nc_logo.png';
 
@@ -78,6 +79,7 @@ const LOCAL_BRIDGE_URL = import.meta.env.VITE_LOCAL_BRIDGE_URL || "https://glaci
 
 interface FormState {
   idNumber: string;
+  email: string;
   course: string;
   address: string;
   guardianName: string;
@@ -89,7 +91,7 @@ interface FormState {
 const SubmitDetails: React.FC = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
-    idNumber: '', course: '', address: '', guardianName: '', guardianContact: '',
+    idNumber: '', email: '', course: '', address: '', guardianName: '', guardianContact: '',
     id_picture: null, signature_picture: null
   });
 
@@ -99,6 +101,12 @@ const SubmitDetails: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<'success' | 'error' | ''>('');
   const [currentStep, setCurrentStep] = useState(1); // 1: Info, 2: Registry, 3: Media
+
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [inputCode, setInputCode] = useState('');
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   // asset states
   const [showCropper, setShowCropper] = useState(false);
@@ -121,7 +129,7 @@ const SubmitDetails: React.FC = () => {
   const [rawSigPoints, setRawSigPoints] = useState<any[]>([]);
   const sigPad = React.useRef<any>(null);
 
-  const isFormIncomplete = !form.idNumber || !form.id_picture || !form.signature_picture;
+  const isFormIncomplete = !form.idNumber || !form.email || !form.id_picture || !form.signature_picture;
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'id_picture' | 'signature_picture') => {
@@ -247,6 +255,51 @@ const SubmitDetails: React.FC = () => {
     }
   };
 
+  const handleSendCode = async () => {
+    if (!form.email || !form.email.includes('@')) {
+      return;
+    }
+
+    setIsSendingCode(true);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedCode(code);
+
+    const templateParams = {
+      to_email: form.email,
+      email: form.email, // Fallback key
+      user_email: form.email, // Common fallback key
+      code: code,
+    };
+
+    console.log('--- EmailJS Trace ---');
+    console.log('Target Email:', form.email);
+    console.log('Params:', templateParams);
+
+    try {
+      const response = await emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        templateParams,
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      );
+      console.log('EmailJS Success:', response.status, response.text);
+      setIsCodeSent(true);
+    } catch (error) {
+      console.error('EmailJS Final Error Object:', error);
+      setErrorMessage('Failed to send verification code. Please check your console logs.');
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  useEffect(() => {
+    if (generatedCode && inputCode === generatedCode) {
+      setIsEmailVerified(true);
+    } else {
+      setIsEmailVerified(false);
+    }
+  }, [inputCode, generatedCode]);
+
   useEffect(() => {
     if (form.idNumber.length >= 8) {
       const delayDebounceFn = setTimeout(async () => {
@@ -350,27 +403,59 @@ const SubmitDetails: React.FC = () => {
                       <AnimatePresence>
                         {verificationStatus === 'valid' && (
                           <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            className="p-5 bg-blue-50/50 rounded-[2rem] flex items-center gap-4 border border-blue-100"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-6 pt-2"
                           >
-                            <div className="p-0.5 bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden shrink-0">
-                              {getDeptLogo(form.course) ? (
-                                <img
-                                  src={getDeptLogo(form.course)!}
-                                  alt={form.course}
-                                  className="h-10 w-10 object-contain"
+                            <div className="flex gap-2">
+                              <div className="flex-1">
+                                <FloatingLabelInput
+                                  label="Official Email Address"
+                                  value={form.email}
+                                  onChange={(v: string) => setForm({ ...form, email: v })}
+                                  type="email"
+                                  icon={<Mail className="h-4 w-4" />}
                                 />
-                              ) : (
-                                <div className="h-10 w-10 flex items-center justify-center bg-blue-50">
-                                  <ShieldCheck className="text-[#001f3f] h-6 w-6" />
-                                </div>
-                              )}
+                              </div>
+                              <Button
+                                type="button"
+                                onClick={handleSendCode}
+                                disabled={isSendingCode || !form.email || isEmailVerified}
+                                className="h-14 px-6 rounded-2xl bg-[#001f3f] text-white font-bold text-[10px] uppercase tracking-widest mt-1"
+                              >
+                                {isSendingCode ? <Loader2 className="animate-spin h-4 w-4" /> : (isCodeSent ? 'Resend' : 'Get Code')}
+                              </Button>
                             </div>
-                            <div>
-                              <p className="text-[10px] font-black uppercase text-black/60 tracking-widest leading-none mb-1">ID Confirmed</p>
-                              <p className="text-sm font-black text-black/80 tracking-tight">Course: {form.course}</p>
-                            </div>
+
+                            {isCodeSent && !isEmailVerified && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="space-y-2"
+                              >
+                                <FloatingLabelInput
+                                  label="Verification Code"
+                                  value={inputCode}
+                                  onChange={setInputCode}
+                                  type="text"
+                                  icon={<KeyIcon className="h-4 w-4" />}
+                                />
+                                <p className="text-[10px] text-blue-600 font-bold px-2">
+                                  Enter the 6-digit code sent to your email.
+                                </p>
+                              </motion.div>
+                            )}
+
+                            {isEmailVerified && (
+                              <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-3"
+                              >
+                                <CheckCircle2 className="text-emerald-500 h-5 w-5" />
+                                <span className="text-xs font-bold text-emerald-700">Email Verified Successfully</span>
+                              </motion.div>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -539,10 +624,10 @@ const SubmitDetails: React.FC = () => {
                   <Button
                     type="button"
                     onClick={() => {
-                      if (currentStep === 1 && verificationStatus !== 'valid') return;
+                      if (currentStep === 1 && (verificationStatus !== 'valid' || !isEmailVerified)) return;
                       setCurrentStep(prev => prev + 1);
                     }}
-                    disabled={currentStep === 1 && verificationStatus !== 'valid'}
+                    disabled={currentStep === 1 && (verificationStatus !== 'valid' || !isEmailVerified)}
                     className="flex-1 h-16 rounded-full bg-primary hover:bg-primary/90 text-white font-black text-xs tracking-[0.2em] transition-all shadow-xl shadow-navy-900/10 active:scale-95 uppercase"
                   >
                     Continue
@@ -772,7 +857,7 @@ const SectionHeader = ({ icon, title }: { icon: React.ReactNode, title: string }
   </div>
 );
 
-const FloatingLabelInput = ({ label, value, onChange, placeholder, status = 'idle', isLoading = false, type = "text" }: any) => {
+const FloatingLabelInput = ({ label, value, onChange, placeholder, status = 'idle', isLoading = false, type = "text", icon }: any) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = value && value.length > 0;
 
@@ -780,9 +865,10 @@ const FloatingLabelInput = ({ label, value, onChange, placeholder, status = 'idl
     <div className="w-full">
       <div className="relative group">
         <div className={cn(
-          "absolute left-6 transition-all pointer-events-none z-10",
+          "absolute left-6 transition-all pointer-events-none z-10 flex items-center gap-2",
           (isFocused || hasValue) ? "-top-2.5 bg-white px-2 scale-90 text-[#001f3f] font-black" : "top-4 text-slate-400 font-bold"
         )}>
+          {icon && <span className="shrink-0">{icon}</span>}
           <label className="text-[10px] uppercase tracking-[0.2em]">{label}</label>
         </div>
         <Input
