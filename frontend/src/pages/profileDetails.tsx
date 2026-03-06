@@ -840,6 +840,47 @@ const SubmitDetails: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+        {/* SUCCESS DIALOG */}
+        <Dialog open={status === 'success'} onOpenChange={() => { }}>
+          <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-[2.5rem] border-none shadow-2xl" onPointerDownOutside={(e) => e.preventDefault()}>
+            <div className="flex flex-col items-center text-center px-10 py-14 space-y-6">
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+                className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center shadow-xl shadow-emerald-500/30"
+              >
+                <CheckCircle2 className="h-12 w-12 text-white" strokeWidth={2.5} />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-3"
+              >
+                <h2 className="text-2xl font-black tracking-tight text-zinc-900">Application Submitted!</h2>
+                <p className="text-sm text-zinc-500 font-medium leading-relaxed max-w-xs mx-auto">
+                  Your ID application has been received and is now being processed. You'll be notified once it's ready.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="w-full pt-4"
+              >
+                <Button
+                  onClick={() => navigate('/')}
+                  className="w-full h-14 rounded-2xl bg-[#001f3f] text-white font-black text-xs tracking-[0.2em] uppercase shadow-xl shadow-[#001f3f]/20 hover:bg-[#001f3f]/90 transition-all active:scale-95"
+                >
+                  Back to Home
+                </Button>
+              </motion.div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       <p className="text-center mt-10 bottom-0 text-[10px] font-medium text-slate-400">
         <Button
