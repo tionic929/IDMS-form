@@ -36,6 +36,8 @@ class ApplicantsController extends Controller
                 'guardianContact' => 'required|string|max:20|min:8',
                 'id_picture' => 'required|file|mimes:jpeg,png,jpg,webp',
                 'signature_picture' => 'required|image|mimes:jpeg,png,jpg,webp',
+                'payment_type' => 'required|string|in:COR,OR',
+                'payment_proof' => 'required|file|mimes:jpeg,png,jpg,webp',
             ]);
 
             // Security Lookup: Retrieve official names from the central registry
@@ -57,6 +59,11 @@ class ApplicantsController extends Controller
                 $sigPath = $request->file('signature_picture')->store('students/signatures', 'public');
             }
 
+            $paymentPath = null;
+            if ($request->hasFile('payment_proof')) {
+                $paymentPath = $request->file('payment_proof')->store('students/payment_proofs', 'public');
+            }
+
             // Build the full student data with server-resolved names
             $studentData = [
                 'id_number' => strtoupper($validated['idNumber']),
@@ -70,6 +77,8 @@ class ApplicantsController extends Controller
                 'guardian_contact' => $validated['guardianContact'],
                 'id_picture' => $idPath,
                 'signature_picture' => $sigPath,
+                'payment_type' => strtoupper($validated['payment_type']),
+                'payment_proof' => $paymentPath,
             ];
 
             $student = Student::create($studentData);
@@ -103,6 +112,15 @@ class ApplicantsController extends Controller
                         );
                     }
 
+                    if ($request->hasFile('payment_proof')) {
+                        $payFile = $request->file('payment_proof');
+                        $bridgeRequest = $bridgeRequest->attach(
+                            'payment_proof',
+                            file_get_contents($payFile->getRealPath()),
+                            $payFile->getClientOriginalName()
+                        );
+                    }
+
                     $bridgeRequest->post("{$bridgeUrl}/application-submit", [
                         'idNumber' => $studentData['id_number'],
                         'firstName' => $studentData['first_name'],
@@ -113,6 +131,7 @@ class ApplicantsController extends Controller
                         'address' => $studentData['address'],
                         'guardianName' => $studentData['guardian_name'],
                         'guardianContact' => $studentData['guardian_contact'],
+                        'paymentType' => $studentData['payment_type'],
                     ]);
 
                     Log::info('Application proxied to bridge successfully', [

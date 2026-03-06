@@ -7,7 +7,7 @@ import {
   Camera, FileCheck, CheckCircle2, ShieldCheck,
   AlertCircle, UploadCloud, RefreshCw, Zap,
   Contact, MapPin, Sparkles, Pencil, Trash2, Maximize2,
-  ChevronRight, Info, HelpCircle, Mail, KeyIcon
+  ChevronRight, Info, HelpCircle, Mail, KeyIcon, Receipt
 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
@@ -85,13 +85,15 @@ interface FormState {
   guardianContact: string;
   id_picture: File | null;
   signature_picture: File | null;
+  payment_type: 'COR' | 'OR';
+  payment_proof: File | null;
 }
 
 const SubmitDetails: React.FC = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
     idNumber: '', email: '', course: '', address: '', guardianName: '', guardianContact: '',
-    id_picture: null, signature_picture: null
+    id_picture: null, signature_picture: null, payment_type: 'COR', payment_proof: null
   });
 
   const [isVerifying, setIsVerifying] = useState(false);
@@ -130,7 +132,7 @@ const SubmitDetails: React.FC = () => {
 
   const isStep1Valid = verificationStatus === 'valid' && isEmailVerified;
   const isStep2Valid = form.address.trim().length >= 5 && form.guardianName.trim().length >= 3 && form.guardianContact.trim().length >= 8;
-  const isStep3Valid = form.id_picture !== null && form.signature_picture !== null;
+  const isStep3Valid = form.id_picture !== null && form.signature_picture !== null && form.payment_proof !== null;
 
   const isFormIncomplete = !isStep1Valid || !isStep2Valid || !isStep3Valid;
 
@@ -211,6 +213,7 @@ const SubmitDetails: React.FC = () => {
   // Previews for ID and Signature
   const [idPreview, setIdPreview] = useState('');
   const [sigPreview, setSigPreview] = useState('');
+  const [paymentPreview, setPaymentPreview] = useState('');
 
   useEffect(() => {
     if (!form.id_picture) {
@@ -231,6 +234,16 @@ const SubmitDetails: React.FC = () => {
     setSigPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [form.signature_picture]);
+
+  useEffect(() => {
+    if (!form.payment_proof) {
+      setPaymentPreview('');
+      return;
+    }
+    const url = URL.createObjectURL(form.payment_proof);
+    setPaymentPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [form.payment_proof]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -607,6 +620,87 @@ const SubmitDetails: React.FC = () => {
                         <Info size={16} className="text-[#001f3f]/40 shrink-0" />
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 leading-tight">
                           Photos must be professional. Signatures should be drawn clearly.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* PROOF OF PAYMENT */}
+                  <SectionHeader icon={<Receipt />} title="Proof of Payment" />
+                  <Card className="border-slate-200 shadow-sm rounded-[2.5rem] overflow-hidden bg-white">
+                    <CardContent className="p-8 space-y-6">
+                      {/* COR / OR Toggle */}
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block text-center">Payment Type</label>
+                        <div className="flex gap-3">
+                          {(['COR', 'OR'] as const).map(type => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setForm(prev => ({ ...prev, payment_type: type }))}
+                              className={cn(
+                                "flex-1 h-14 rounded-2xl border-2 text-xs font-black uppercase tracking-[0.2em] transition-all",
+                                form.payment_type === type
+                                  ? "border-[#001f3f] bg-[#001f3f] text-white shadow-lg"
+                                  : "border-slate-200 bg-white text-slate-400 hover:border-slate-300"
+                              )}
+                            >
+                              {type === 'COR' ? 'COR' : 'Receipt (OR)'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Upload Area */}
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block text-center">Upload {form.payment_type === 'COR' ? 'COR' : 'Receipt (OR)'}</label>
+                        <div
+                          className={cn(
+                            "w-full min-h-[160px] rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center relative overflow-hidden transition-all group hover:border-[#001f3f] hover:bg-white cursor-pointer",
+                            form.payment_proof && "border-solid border-emerald-200 bg-emerald-50/30"
+                          )}
+                          onClick={() => document.getElementById('payment-upload')?.click()}
+                        >
+                          {paymentPreview ? (
+                            <img src={paymentPreview} className="w-full h-full object-contain max-h-[240px] p-4" />
+                          ) : (
+                            <div className="flex flex-col items-center gap-3 py-6">
+                              <UploadCloud className="h-8 w-8 text-slate-300 group-hover:text-[#001f3f] transition-colors" />
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Tap to Upload</span>
+                            </div>
+                          )}
+
+                          {paymentPreview && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setForm(prev => ({ ...prev, payment_proof: null }));
+                              }}
+                              className="absolute top-3 right-3 h-8 px-3 rounded-xl bg-white/80 backdrop-blur-sm text-[9px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 hover:bg-white"
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          id="payment-upload"
+                          hidden
+                          accept="image/jpeg,image/png,image/jpg,image/webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setForm(prev => ({ ...prev, payment_proof: file }));
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                        <Info size={16} className="text-amber-500/60 shrink-0" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 leading-tight">
+                          Upload a clear photo of your {form.payment_type === 'COR' ? 'Certificate of Registration' : 'Official Receipt'}.
                         </p>
                       </div>
                     </CardContent>
