@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Loader2, User, BookOpen,
@@ -75,7 +75,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 
-const LOCAL_BRIDGE_URL = import.meta.env.VITE_LOCAL_BRIDGE_URL || "https://glacial-samiyah-presutural.ngrok-free.dev";
 
 interface FormState {
   idNumber: string;
@@ -244,11 +243,8 @@ const SubmitDetails: React.FC = () => {
         if (value !== null) formData.append(key, value as string | Blob);
       });
 
-      await axios.post(`${LOCAL_BRIDGE_URL}/application-submit`, formData, {
-        headers: {
-          'ngrok-skip-browser-warning': 'true'
-        }
-      });
+      // Submit through the Laravel backend — names are resolved server-side
+      await api.post('/students', formData);
 
       setStatus('success');
       window.scrollTo({ top: 0, behavior: 'smooth' });

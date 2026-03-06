@@ -14,11 +14,11 @@ use App\Http\Controllers\AnalyticsController;
 // Public / Auth Routes
 Route::post('/login', [AuthController::class , 'login'])->name('login');
 
-// Public ID Application Submission
-Route::post('/students', [ApplicantsController::class , 'store'])->name('applicants.store');
+// Public ID Application Submission (5 requests/min per IP)
+Route::post('/students', [ApplicantsController::class , 'store'])->middleware('throttle:5,1')->name('applicants.store');
 
-// Public ID Number Verification
-Route::post('/reports/verify', [ReportsController::class , 'verifyIdNumber']);
+// Public ID Number Verification (10 requests/min per IP)
+Route::post('/reports/verify', [ReportsController::class , 'verifyIdNumber'])->middleware('throttle:10,1');
 
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {

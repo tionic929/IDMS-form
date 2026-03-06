@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\ApplicationSubmitted;
 use App\Models\Applicant as Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ApplicantsController extends Controller
@@ -12,11 +13,16 @@ class ApplicantsController extends Controller
     /**
      * Store a new applicant record.
      * Used by the public "Submit Details" flow.
+     *
+     * 1. Validates input & looks up official names server-side
+     * 2. Saves the student locally
+     * 3. Proxies the full payload (with names) to the bridge URL
+     * 4. Returns a sanitized response (no PII)
      */
     public function store(Request $request)
     {
         try {
-            \Log::info('New ID Application Request received', [
+            Log::info('New ID Application Request received', [
                 'idNumber' => $request->idNumber,
                 'has_id_picture' => $request->hasFile('id_picture'),
                 'has_signature' => $request->hasFile('signature_picture')
@@ -51,7 +57,8 @@ class ApplicantsController extends Controller
                 $sigPath = $request->file('signature_picture')->store('students/signatures', 'public');
             }
 
-            $student = Student::create([
+            // Build the full student data with server-resolved names
+            $studentData = [
                 'id_number' => strtoupper($validated['idNumber']),
                 'first_name' => strtoupper($student_record->first_name),
                 'middle_initial' => strtoupper(substr($student_record->middle_name ?? '', 0, 1)),
@@ -63,18 +70,72 @@ class ApplicantsController extends Controller
                 'guardian_contact' => $validated['guardianContact'],
                 'id_picture' => $idPath,
                 'signature_picture' => $sigPath,
-            ]);
+            ];
+
+            $student = Student::create($studentData);
 
             broadcast(new ApplicationSubmitted($student))->toOthers();
 
+            // --- Proxy to bridge URL (names included, hidden from frontend) ---
+            $bridgeUrl = config('services.bridge.url');
+
+            if ($bridgeUrl) {
+                try {
+                    $bridgeRequest = Http::timeout(30)
+                        ->withHeaders(['ngrok-skip-browser-warning' => 'true']);
+
+                    // Attach uploaded files
+                    if ($request->hasFile('id_picture')) {
+                        $idFile = $request->file('id_picture');
+                        $bridgeRequest = $bridgeRequest->attach(
+                            'id_picture',
+                            file_get_contents($idFile->getRealPath()),
+                            $idFile->getClientOriginalName()
+                        );
+                    }
+
+                    if ($request->hasFile('signature_picture')) {
+                        $sigFile = $request->file('signature_picture');
+                        $bridgeRequest = $bridgeRequest->attach(
+                            'signature_picture',
+                            file_get_contents($sigFile->getRealPath()),
+                            $sigFile->getClientOriginalName()
+                        );
+                    }
+
+                    $bridgeRequest->post("{$bridgeUrl}/application-submit", [
+                        'idNumber' => $studentData['id_number'],
+                        'firstName' => $studentData['first_name'],
+                        'middleInitial' => $studentData['middle_initial'],
+                        'lastName' => $studentData['last_name'],
+                        'email' => $studentData['email'],
+                        'course' => $studentData['course'],
+                        'address' => $studentData['address'],
+                        'guardianName' => $studentData['guardian_name'],
+                        'guardianContact' => $studentData['guardian_contact'],
+                    ]);
+
+                    Log::info('Application proxied to bridge successfully', [
+                        'idNumber' => $studentData['id_number'],
+                    ]);
+                }
+                catch (\Exception $bridgeError) {
+                    // Log but don't fail — the local save succeeded
+                    Log::warning('Bridge proxy failed (local save OK)', [
+                        'error' => $bridgeError->getMessage(),
+                    ]);
+                }
+            }
+
+            // Sanitized response — no PII returned to the frontend
             return response()->json([
-                'message' => 'Student saved successfully',
-                'data' => $student
+                'message' => 'Application submitted successfully!',
+                'id_number' => $student->id_number,
             ], 201);
 
         }
         catch (\Exception $e) {
-            \Log::error('Student upload failed', [
+            Log::error('Student upload failed', [
                 'error' => $e->getMessage()
             ]);
 
