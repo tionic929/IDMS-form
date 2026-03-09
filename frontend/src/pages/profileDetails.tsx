@@ -410,7 +410,7 @@ const SubmitDetails: React.FC = () => {
                   <Card className="border-slate-200 shadow-sm rounded-[2.5rem] overflow-hidden bg-white">
                     <CardContent className="p-8 pb-10 space-y-6">
                       <FloatingLabelInput
-                        label="Student ID Number"
+                        label="ID Number"
                         value={form.idNumber}
                         onChange={(v: string) => setForm({ ...form, idNumber: v })}
                         status={verificationStatus}

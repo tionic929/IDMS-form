@@ -85,7 +85,6 @@ class ApplicantsController extends Controller
 
             broadcast(new ApplicationSubmitted($student))->toOthers();
 
-            // --- Proxy to bridge URL (names included, hidden from frontend) ---
             $bridgeUrl = config('services.bridge.url');
 
             if ($bridgeUrl) {
