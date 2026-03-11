@@ -78,6 +78,7 @@ import { cn } from "@/lib/utils";
 
 interface FormState {
   idNumber: string;
+  manual_full_name: string;
   email: string;
   course: string;
   address: string;
@@ -87,13 +88,27 @@ interface FormState {
   signature_picture: File | null;
   payment_type: 'COR' | 'OR';
   payment_proof: File | null;
+  reissuance_reason: string;
 }
+
+const REISSUANCE_REASONS = [
+  'Lost ID',
+  'Damaged ID',
+  'Department Shift',
+  'Correction of Entry',
+  'Other'
+];
+
+const COURSES = [
+  'BSBA', 'BSN', 'BSCRIM', 'BSED', 'BSHM', 'BSIT', 'BSGE',
+  'MASTERAL', 'EMPLOYEE', 'MIDWIFERY', 'AB', 'JD', 'ABM', 'ICT', 'STEM', 'HUMMS', 'BEC'
+];
 
 const SubmitDetails: React.FC = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
-    idNumber: '', email: '', course: '', address: '', guardianName: '', guardianContact: '',
-    id_picture: null, signature_picture: null, payment_type: 'COR', payment_proof: null
+    idNumber: '', manual_full_name: '', email: '', course: '', address: '', guardianName: '', guardianContact: '',
+    id_picture: null, signature_picture: null, payment_type: 'COR', payment_proof: null, reissuance_reason: ''
   });
 
   const [isVerifying, setIsVerifying] = useState(false);
@@ -108,6 +123,8 @@ const SubmitDetails: React.FC = () => {
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isSecondIssuance, setIsSecondIssuance] = useState(false);
+  const [showReissuanceModal, setShowReissuanceModal] = useState(false);
 
   // asset states
   const [showCropper, setShowCropper] = useState(false);
@@ -131,8 +148,13 @@ const SubmitDetails: React.FC = () => {
   const sigPad = React.useRef<any>(null);
 
   const isStep1Valid = verificationStatus === 'valid' && isEmailVerified;
-  const isStep2Valid = form.address.trim().length >= 5 && form.guardianName.trim().length >= 3 && form.guardianContact.trim().length >= 8;
-  const isStep3Valid = form.id_picture !== null && form.signature_picture !== null && form.payment_proof !== null;
+  const isStep2Valid =    (form.manual_full_name.trim().length >= 3) && 
+    (form.address.trim().length >= 5) && 
+    (form.guardianName.trim().length >= 3) && 
+    (/^\d{11}$/.test(form.guardianContact)) &&
+    (isSecondIssuance && form.reissuance_reason === 'Department Shift' ? form.course !== '' : true);
+  const isStep3Valid = (isSecondIssuance ? true : (form.id_picture !== null && form.signature_picture !== null)) && 
+                      form.payment_proof !== null;
 
   const isFormIncomplete = !isStep1Valid || !isStep2Valid || !isStep3Valid;
 
@@ -246,10 +268,13 @@ const SubmitDetails: React.FC = () => {
   }, [form.payment_proof]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isFormIncomplete) return;
+    if (isSecondIssuance) {
+      if (!window.confirm('You are about to re-submit an application for an existing record. This will be marked as a RE-ISSUANCE. Do you want to proceed?')) {
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
-    setIsSubmitting(true);
     try {
       const formData = new FormData();
       Object.entries(form).forEach(([key, value]) => {
@@ -317,16 +342,32 @@ const SubmitDetails: React.FC = () => {
     // Reset all verification states when ID number changes
     setVerificationStatus('idle');
     setIsEmailVerified(false);
-    setIsCodeSent(false);
-    setGeneratedCode(null);
+    setIsCodeSent(false);    setGeneratedCode(null);
     setInputCode('');
+    setIsSecondIssuance(false);
 
     if (form.idNumber.length >= 8) {
       const delayDebounceFn = setTimeout(async () => {
         setIsVerifying(true);
         try {
+          // 1. Verify if ID exists in SIAS Registry
           await verifyIdNumber(form.idNumber);
           setVerificationStatus('valid');
+
+          // 2. Check if already has a record in our system (Second Issuance)
+          const { data: checkData } = await api.post('/students/check-existing', { idNumber: form.idNumber });
+          if (checkData.exists) {
+            setIsSecondIssuance(true);
+            setShowReissuanceModal(true);
+            // Pre-fill existing data
+            setForm(prev => ({
+              ...prev,
+              email: checkData.data.email || prev.email,
+              address: checkData.data.address || prev.address,
+              guardianName: checkData.data.guardianName || prev.guardianName,
+              guardianContact: checkData.data.guardianContact || prev.guardianContact,
+            }));
+          }
         } catch (err) {
           setVerificationStatus('invalid');
           setErrorMessage('School ID not found in registry');
@@ -336,6 +377,9 @@ const SubmitDetails: React.FC = () => {
     }
   }, [form.idNumber]);
 
+  const handleConfirmReissuance = () => {
+    setShowReissuanceModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans text-zinc-900 pb-20 selection:bg-[#001f3f]/10">
@@ -413,17 +457,27 @@ const SubmitDetails: React.FC = () => {
                         label="ID Number"
                         value={form.idNumber}
                         onChange={(v: string) => setForm({ ...form, idNumber: v })}
-                        status={verificationStatus}
+                        status={isSecondIssuance ? 'orange' : verificationStatus}
                         isLoading={isVerifying}
+                        icon={isSecondIssuance ? <Zap className="h-4 w-4 text-orange-500" /> : undefined}
+                        statusLabel={isSecondIssuance ? "Existing Record (Reissuance)" : undefined}
                       />
 
                       <AnimatePresence>
-                        {verificationStatus === 'valid' && (
+                        {verificationStatus === 'valid' && !isVerifying && (
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="space-y-6 pt-2"
                           >
+                            <FloatingLabelInput
+                              label="Enter Full Name (Manual)"
+                              value={form.manual_full_name}
+                              onChange={(v: string) => setForm({ ...form, manual_full_name: v })}
+                              status={form.manual_full_name.length > 0 ? (form.manual_full_name.length >= 3 ? 'valid' : 'invalid') : 'idle'}
+                              icon={<User className="h-4 w-4" />}
+                            />
+
                             <div className="flex gap-2">
                               <div className="flex-1">
                                 <FloatingLabelInput
@@ -502,11 +556,43 @@ const SubmitDetails: React.FC = () => {
                           status={form.guardianName.length > 0 ? (form.guardianName.length >= 3 ? 'valid' : 'invalid') : 'idle'}
                         />
                         <FloatingLabelInput
-                          label="Guardian Contact No."
+                          label="Guardian Contact No. (+63XXXXXXXXXX)"
                           value={form.guardianContact}
-                          onChange={(v: string) => setForm({ ...form, guardianContact: v })}
-                          status={form.guardianContact.length > 0 ? (form.guardianContact.length >= 8 ? 'valid' : 'invalid') : 'idle'}
+                          onChange={(v: string) => {
+                            const cleaned = v.replace(/\D/g, '').slice(0, 11);
+                            setForm({ ...form, guardianContact: cleaned });
+                          }}
+                          status={form.guardianContact.length > 0 ? (form.guardianContact.length === 11 ? 'valid' : 'invalid') : 'idle'}
+                          placeholder="+63XXXXXXXXXX"
                         />
+                        
+                        {isSecondIssuance && (
+                          <div className="space-y-2">
+                             <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">Reason for Reissuance</label>
+                             <select 
+                               className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
+                               value={form.reissuance_reason}
+                               onChange={(e) => setForm({ ...form, reissuance_reason: e.target.value })}
+                             >
+                               <option value="">Select Reason...</option>
+                               {REISSUANCE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                             </select>
+                          </div>
+                        )}
+
+                        {isSecondIssuance && form.reissuance_reason === 'Department Shift' && (
+                           <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">New Department / Course</label>
+                              <select 
+                                className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
+                                value={form.course}
+                                onChange={(e) => setForm({ ...form, course: e.target.value })}
+                              >
+                                <option value="">Select New Course...</option>
+                                {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
+                              </select>
+                           </div>
+                         )}
                       </div>
                     </CardContent>
                   </Card>
@@ -579,20 +665,78 @@ const SubmitDetails: React.FC = () => {
 
                         {/* SIGNATURE MODULE */}
                         <div className="w-full space-y-4">
-                          <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block text-center">Digital Signature</label>
+                          <div className="flex items-center justify-between px-2">
+                            <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Digital Signature</label>
+                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                              <button 
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSigType('draw');
+                                  if (form.signature_picture && rawSigPoints.length === 0) setForm(prev => ({ ...prev, signature_picture: null }));
+                                }}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                                  sigType === 'draw' ? "bg-white text-[#001f3f] shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                )}
+                              >
+                                Draw
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSigType('upload');
+                                  if (rawSigPoints.length > 0) {
+                                      setForm(prev => ({ ...prev, signature_picture: null }));
+                                      setRawSigPoints([]);
+                                  }
+                                }}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all",
+                                  sigType === 'upload' ? "bg-white text-[#001f3f] shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                )}
+                              >
+                                Upload
+                              </button>
+                            </div>
+                          </div>
+
+                          <input 
+                            type="file" 
+                            id="sig-file-upload" 
+                            hidden 
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setForm(prev => ({ ...prev, signature_picture: file }));
+                                setRawSigPoints([]);
+                              }
+                            }}
+                          />
+
                           <div
                             className={cn(
-                              "w-full h-40 rounded-[2rem] border-2 border-slate-100 bg-slate-50 flex items-center justify-center relative overflow-hidden transition-all group hover:border-blue-200 cursor-pointer",
-                              form.signature_picture && "border-emerald-100 bg-emerald-50/30"
+                              "w-full h-40 rounded-[2rem] border-2 border-slate-100 bg-slate-50 flex items-center justify-center relative overflow-hidden transition-all group hover:border-[#001f3f]/30 cursor-pointer",
+                              sigPreview && "border-solid border-emerald-100 bg-emerald-50/30"
                             )}
-                            onClick={() => setShowSigPad(true)}
+                            onClick={() => {
+                              if (sigType === 'draw') {
+                                setShowSigPad(true);
+                              } else {
+                                document.getElementById('sig-file-upload')?.click();
+                              }
+                            }}
                           >
                             {sigPreview ? (
                               <img src={sigPreview} className="max-w-[70%] max-h-[70%] object-contain" />
                             ) : (
                               <div className="flex flex-col items-center gap-2">
                                 <Pencil className="h-6 w-6 text-slate-300 transition-colors group-hover:text-[#001f3f]" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Touch to Sign</span>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                  {rawSigPoints.length > 0 ? 'Redraw' : 'Touch to Sign / Upload'}
+                                </span>
                               </div>
                             )}
 
@@ -975,6 +1119,39 @@ const SubmitDetails: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* REISSUANCE CONFIRMATION MODAL */}
+        <Dialog open={showReissuanceModal} onOpenChange={setShowReissuanceModal}>
+          <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-[2.5rem] border-none shadow-2xl" onPointerDownOutside={(e) => e.preventDefault()}>
+            <div className="flex flex-col items-center text-center px-10 py-14 space-y-6">
+              <div className="w-24 h-24 rounded-full bg-orange-50 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-orange-100 rounded-full animate-pulse" />
+                <Zap className="h-12 w-12 text-orange-600 relative z-10" />
+              </div>
+
+              <div className="space-y-3">
+                <h2 className="text-2xl font-black tracking-tight text-zinc-900 uppercase">Existing Record Found</h2>
+                <div className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                  <p className="text-[11px] text-orange-700 font-bold uppercase tracking-tight leading-relaxed">
+                    A record for ID <span className="underline decoration-2">{form.idNumber}</span> already exists.
+                    You are now in <span className="text-orange-900 border-b-2 border-orange-900/20">RE-ISSUANCE MODE</span>.
+                  </p>
+                </div>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-relaxed pt-2">
+                  Previous data has been loaded. Please verify all details and provide a reason for the replacement ID.
+                </p>
+              </div>
+
+              <Button
+                onClick={handleConfirmReissuance}
+                className="w-full h-16 rounded-2xl bg-orange-600 text-white font-black text-xs tracking-[0.2em] uppercase shadow-xl shadow-orange-600/20 hover:bg-orange-700 transition-all active:scale-95 group"
+              >
+                Continue as Reissuance
+                <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       <p className="text-center mt-10 bottom-0 text-[10px] font-medium text-slate-400">
         <Button
@@ -1000,7 +1177,7 @@ const SectionHeader = ({ icon, title }: { icon: React.ReactNode, title: string }
   </div>
 );
 
-const FloatingLabelInput = ({ label, value, onChange, placeholder, status = 'idle', isLoading = false, type = "text", icon }: any) => {
+const FloatingLabelInput = ({ label, value, onChange, placeholder, status = 'idle', isLoading = false, type = "text", icon, statusLabel }: any) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = value && value.length > 0;
 
@@ -1013,6 +1190,9 @@ const FloatingLabelInput = ({ label, value, onChange, placeholder, status = 'idl
         )}>
           {icon && <span className="shrink-0">{icon}</span>}
           <label className="text-[10px] uppercase tracking-[0.2em]">{label}</label>
+          {status === 'orange' && statusLabel && (
+            <span className="text-[8px] font-black text-orange-600 ml-2 px-1.5 py-0.5 bg-orange-50 rounded-full border border-orange-100">{statusLabel}</span>
+          )}
         </div>
         <Input
           type={type}
@@ -1024,13 +1204,15 @@ const FloatingLabelInput = ({ label, value, onChange, placeholder, status = 'idl
             "h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold transition-all placeholder:text-transparent",
             "focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm",
             status === 'valid' && "border-emerald-500/30 bg-emerald-50/10",
-            status === 'invalid' && "border-red-500/30 bg-red-50/10"
+            status === 'invalid' && "border-red-500/30 bg-red-50/10",
+            status === 'orange' && "border-orange-500 bg-orange-50 ring-4 ring-orange-500/10 shadow-[0_0_20px_rgba(249,115,22,0.15)]"
           )}
         />
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
           {isLoading && <Loader2 className="animate-spin text-slate-300 h-4 w-4" />}
           {status === 'valid' && !isLoading && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
           {status === 'invalid' && !isLoading && <AlertCircle className="h-4 w-4 text-red-500" />}
+          {status === 'orange' && !isLoading && <Zap className="h-4 w-4 text-orange-500 animate-pulse" />}
         </div>
       </div>
     </div>

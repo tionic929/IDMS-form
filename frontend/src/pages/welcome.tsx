@@ -162,7 +162,7 @@ const Welcome: React.FC = () => {
             </div>
           </div>
           <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase text-center md:text-right">
-            Build 0.3h © {new Date().getFullYear()} Northeastern College · Developed by <br /><span className="text-foreground">Sherwin Adonis Vizcarra - II</span>
+            Build 0.4A © {new Date().getFullYear()} Northeastern College · Developed by <br /><span className="text-foreground">Sherwin Adonis Vizcarra - II</span>
           </p>
         </div>
       </footer>

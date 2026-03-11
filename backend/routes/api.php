@@ -19,6 +19,7 @@ Route::post('/students', [ApplicantsController::class , 'store'])->middleware('t
 
 // Public ID Number Verification (10 requests/min per IP)
 Route::post('/reports/verify', [ReportsController::class , 'verifyIdNumber'])->middleware('throttle:10,1');
+Route::post('/students/check-existing', [ApplicantsController::class, 'checkExistingRecord']);
 
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -38,6 +39,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Report Management
         Route::post('/import', [ReportsController::class , 'import']);
         Route::get('/all-imported-reports', [ReportsController::class , 'getImportedReports']);
+
+        // Student Management
+        Route::get('/students/archived', [ApplicantsController::class, 'getArchived']);
+        Route::post('/students/{id}/archive', [ApplicantsController::class, 'archive']);
+        Route::delete('/students/{id}/permanent', [ApplicantsController::class, 'destroy']);
 
         // User Management
         Route::resource('users', UsersController::class);

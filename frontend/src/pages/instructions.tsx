@@ -17,7 +17,7 @@ const NC_TEAL = '#00928a';
 
 const steps = [
   {
-    title: "Prepare Your Data",
+    title: "Prepare Your COR/Receipt and ID Number",
     desc: "Gather your Student Details, and other information before starting.",
     icon: <UserCircle className="h-5 w-5" />,
   },
