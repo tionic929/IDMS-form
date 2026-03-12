@@ -268,6 +268,9 @@ const SubmitDetails: React.FC = () => {
   }, [form.payment_proof]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
     if (isSecondIssuance) {
       if (!window.confirm('You are about to re-submit an application for an existing record. This will be marked as a RE-ISSUANCE. Do you want to proceed?')) {
         setIsSubmitting(false);

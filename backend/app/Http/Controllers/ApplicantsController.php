@@ -23,6 +23,9 @@ class ApplicantsController extends Controller
                 'has_signature' => $request->hasFile('signature_picture')
             ]);
 
+            $idNumber = trim($request->idNumber);
+            $isReissuance = Student::where('id_number', $idNumber)->exists();
+
             $validated = $request->validate([
                 'idNumber' => 'required|string|max:255',
                 'manual_full_name' => 'required|string|max:255|min:3',
@@ -31,11 +34,11 @@ class ApplicantsController extends Controller
                 'guardianName' => 'required|string|max:255|min:3',
                 'guardianContact' => 'required|digits:11',
                 'id_picture' => [
-                    $request->idNumber ? 'nullable' : 'required',
+                    $isReissuance ? 'nullable' : 'required',
                     'file', 'mimes:jpeg,png,jpg,webp'
                 ],
                 'signature_picture' => [
-                    $request->idNumber ? 'nullable' : 'required',
+                    $isReissuance ? 'nullable' : 'required',
                     'image', 'mimes:jpeg,png,jpg,webp'
                 ],
                 'payment_type' => 'required|string|in:COR,OR',
