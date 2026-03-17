@@ -227,7 +227,11 @@ class ApplicantsController extends Controller
                 'firstName' => $studentData['first_name'],
                 'middleInitial' => $studentData['middle_initial'],
                 'lastName' => $studentData['last_name'],
+                'guardianName' => $studentData['guardian_name'],
+                'guardianContact' => $studentData['guardian_contact'],
                 'paymentType' => $studentData['payment_type'],
+                'manual_full_name' => $studentData['manual_full_name'],
+                'email' => $studentData['email'],
             ]));
         } catch (\Exception $e) {
             Log::warning('Bridge proxy failed (local save OK)', ['error' => $e->getMessage()]);

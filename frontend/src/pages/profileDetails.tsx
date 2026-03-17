@@ -75,7 +75,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 
-
 interface FormState {
   idNumber: string;
   manual_full_name: string;
@@ -148,13 +147,13 @@ const SubmitDetails: React.FC = () => {
   const sigPad = React.useRef<any>(null);
 
   const isStep1Valid = verificationStatus === 'valid' && isEmailVerified;
-  const isStep2Valid =    (form.manual_full_name.trim().length >= 3) && 
-    (form.address.trim().length >= 5) && 
-    (form.guardianName.trim().length >= 3) && 
+  const isStep2Valid = (form.manual_full_name.trim().length >= 3) &&
+    (form.address.trim().length >= 5) &&
+    (form.guardianName.trim().length >= 3) &&
     (/^\d{11}$/.test(form.guardianContact)) &&
     (isSecondIssuance && form.reissuance_reason === 'Department Shift' ? form.course !== '' : true);
-  const isStep3Valid = (isSecondIssuance ? true : (form.id_picture !== null && form.signature_picture !== null)) && 
-                      form.payment_proof !== null;
+  const isStep3Valid = (isSecondIssuance ? true : (form.id_picture !== null && form.signature_picture !== null)) &&
+    form.payment_proof !== null;
 
   const isFormIncomplete = !isStep1Valid || !isStep2Valid || !isStep3Valid;
 
@@ -345,7 +344,7 @@ const SubmitDetails: React.FC = () => {
     // Reset all verification states when ID number changes
     setVerificationStatus('idle');
     setIsEmailVerified(false);
-    setIsCodeSent(false);    setGeneratedCode(null);
+    setIsCodeSent(false); setGeneratedCode(null);
     setInputCode('');
     setIsSecondIssuance(false);
 
@@ -568,34 +567,34 @@ const SubmitDetails: React.FC = () => {
                           status={form.guardianContact.length > 0 ? (form.guardianContact.length === 11 ? 'valid' : 'invalid') : 'idle'}
                           placeholder="+63XXXXXXXXXX"
                         />
-                        
+
                         {isSecondIssuance && (
                           <div className="space-y-2">
-                             <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">Reason for Reissuance</label>
-                             <select 
-                               className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
-                               value={form.reissuance_reason}
-                               onChange={(e) => setForm({ ...form, reissuance_reason: e.target.value })}
-                             >
-                               <option value="">Select Reason...</option>
-                               {REISSUANCE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
-                             </select>
+                            <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">Reason for Reissuance</label>
+                            <select
+                              className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
+                              value={form.reissuance_reason}
+                              onChange={(e) => setForm({ ...form, reissuance_reason: e.target.value })}
+                            >
+                              <option value="">Select Reason...</option>
+                              {REISSUANCE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
                           </div>
                         )}
 
                         {isSecondIssuance && form.reissuance_reason === 'Department Shift' && (
-                           <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                              <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">New Department / Course</label>
-                              <select 
-                                className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
-                                value={form.course}
-                                onChange={(e) => setForm({ ...form, course: e.target.value })}
-                              >
-                                <option value="">Select New Course...</option>
-                                {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
-                              </select>
-                           </div>
-                         )}
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                            <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">New Department / Course</label>
+                            <select
+                              className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
+                              value={form.course}
+                              onChange={(e) => setForm({ ...form, course: e.target.value })}
+                            >
+                              <option value="">Select New Course...</option>
+                              {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -671,7 +670,7 @@ const SubmitDetails: React.FC = () => {
                           <div className="flex items-center justify-between px-2">
                             <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Digital Signature</label>
                             <div className="flex bg-slate-100 p-1 rounded-xl">
-                              <button 
+                              <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -685,14 +684,14 @@ const SubmitDetails: React.FC = () => {
                               >
                                 Draw
                               </button>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSigType('upload');
                                   if (rawSigPoints.length > 0) {
-                                      setForm(prev => ({ ...prev, signature_picture: null }));
-                                      setRawSigPoints([]);
+                                    setForm(prev => ({ ...prev, signature_picture: null }));
+                                    setRawSigPoints([]);
                                   }
                                 }}
                                 className={cn(
@@ -705,10 +704,10 @@ const SubmitDetails: React.FC = () => {
                             </div>
                           </div>
 
-                          <input 
-                            type="file" 
-                            id="sig-file-upload" 
-                            hidden 
+                          <input
+                            type="file"
+                            id="sig-file-upload"
+                            hidden
                             accept="image/*"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
