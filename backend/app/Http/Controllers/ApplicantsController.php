@@ -131,6 +131,7 @@ class ApplicantsController extends Controller
                 'data' => [
                     'idNumber' => $student->id_number,
                     'email' => $student->email,
+                    'manual_full_name' => $student->manual_full_name,
                     'address' => $student->address,
                     'guardianName' => $student->guardian_name,
                     'guardianContact' => $student->guardian_contact,

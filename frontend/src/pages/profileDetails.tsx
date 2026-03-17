@@ -353,8 +353,15 @@ const SubmitDetails: React.FC = () => {
         setIsVerifying(true);
         try {
           // 1. Verify if ID exists in SIAS Registry
-          await verifyIdNumber(form.idNumber);
+          const registryData = await verifyIdNumber(form.idNumber);
           setVerificationStatus('valid');
+
+          // Auto-populate manual_full_name from registry if not already set
+          if (registryData.data) {
+            const { first_name, middle_name, last_name } = registryData.data;
+            const officialName = `${first_name} ${middle_name ? middle_name + ' ' : ''}${last_name}`.toUpperCase();
+            setForm(prev => ({ ...prev, manual_full_name: prev.manual_full_name || officialName }));
+          }
 
           // 2. Check if already has a record in our system (Second Issuance)
           const { data: checkData } = await api.post('/students/check-existing', { idNumber: form.idNumber });
@@ -365,6 +372,7 @@ const SubmitDetails: React.FC = () => {
             setForm(prev => ({
               ...prev,
               email: checkData.data.email || prev.email,
+              manual_full_name: checkData.data.manual_full_name || prev.manual_full_name,
               address: checkData.data.address || prev.address,
               guardianName: checkData.data.guardianName || prev.guardianName,
               guardianContact: checkData.data.guardianContact || prev.guardianContact,

@@ -34,6 +34,11 @@ class ReportsController extends Controller
         return response()->json([
             'valid' => true,
             'message' => 'Student record found!',
+            'data' => [
+                'first_name' => $record->first_name,
+                'middle_name' => $record->middle_name,
+                'last_name' => $record->last_name,
+            ]
         ], 200);
     }
 
