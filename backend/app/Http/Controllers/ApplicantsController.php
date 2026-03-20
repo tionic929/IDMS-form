@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Events\ApplicationSubmitted;
 use App\Models\Applicant as Student;
+use App\Mail\OtpMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
 class ApplicantsController extends Controller
@@ -48,14 +50,6 @@ class ApplicantsController extends Controller
             ]);
 
             $idNumber = trim($validated['idNumber']);
-            // Security Lookup: Retrieve official names from the central registry
-            $student_record = \App\Models\Items::where('id_number', $idNumber)->first();
-
-            if (!$student_record) {
-                return response()->json([
-                    'message' => 'Profile authentication failed. Your ID number was not found in our registry. Please contact the Registrar Office.',
-                ], 422);
-            }
 
             $idPath = null;
             if ($request->hasFile('id_picture')) {
@@ -72,15 +66,24 @@ class ApplicantsController extends Controller
                 $paymentPath = $request->file('payment_proof')->store('students/payment_proofs', 'public');
             }
 
-            // Build the full student data with server-resolved names
+            // Provide fallback structured names based on full name
+            $nameParts = explode(' ', trim($validated['manual_full_name']));
+            $lastName = array_pop($nameParts);
+            $firstName = implode(' ', $nameParts);
+            if (empty($firstName)) {
+                $firstName = $lastName;
+                $lastName = '';
+            }
+
+            // Build the full student data with manual applicant names
             $studentData = [
                 'id_number' => strtoupper($idNumber),
-                'first_name' => strtoupper($student_record->first_name),
-                'middle_initial' => strtoupper(substr($student_record->middle_name ?? '', 0, 1)),
-                'last_name' => strtoupper($student_record->last_name),
+                'first_name' => strtoupper($firstName),
+                'middle_initial' => '',
+                'last_name' => strtoupper($lastName),
                 'manual_full_name' => strtoupper($validated['manual_full_name']),
                 'email' => strtolower($validated['email']),
-                'course' => strtoupper($validated['course'] ?? $student_record->course),
+                'course' => strtoupper($validated['course'] ?? ''),
                 'address' => strtoupper($validated['address']),
                 'guardian_name' => strtoupper($validated['guardianName']),
                 'guardian_contact' => $validated['guardianContact'],
@@ -91,12 +94,14 @@ class ApplicantsController extends Controller
                 'archived_at' => null,
             ];
 
-            if ($idPath) $studentData['id_picture'] = $idPath;
-            if ($sigPath) $studentData['signature_picture'] = $sigPath;
+            if ($idPath)
+                $studentData['id_picture'] = $idPath;
+            if ($sigPath)
+                $studentData['signature_picture'] = $sigPath;
 
             // Update if exists, else create
             $student = Student::updateOrCreate(
-                ['id_number' => $studentData['id_number']],
+            ['id_number' => $studentData['id_number']],
                 $studentData
             );
 
@@ -110,7 +115,8 @@ class ApplicantsController extends Controller
                 'id_number' => $student->id_number,
             ], 201);
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Student upload failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error saving student', 'error' => $e->getMessage()], 500);
         }
@@ -135,6 +141,7 @@ class ApplicantsController extends Controller
                     'address' => $student->address,
                     'guardianName' => $student->guardian_name,
                     'guardianContact' => $student->guardian_contact,
+                    'course' => $student->course,
                     // Note: Sensitive files are not pre-filled for security, 
                     // but paths are kept to avoid re-upload if not changed (handled in frontend).
                 ]
@@ -142,6 +149,25 @@ class ApplicantsController extends Controller
         }
 
         return response()->json(['exists' => false]);
+    }
+
+    /**
+     * Send OTP email via Google SMTP
+     */
+    public function sendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string|size:6',
+        ]);
+
+        try {
+            Mail::to($request->email)->send(new OtpMail($request->code));
+            return response()->json(['message' => 'OTP sent successfully']);
+        } catch (\Exception $e) {
+            Log::error('OTP send failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to send OTP'], 500);
+        }
     }
 
     /**
@@ -203,7 +229,8 @@ class ApplicantsController extends Controller
     private function proxyToBridge(Request $request, array $studentData)
     {
         $bridgeUrl = config('services.bridge.url');
-        if (!$bridgeUrl) return;
+        if (!$bridgeUrl)
+            return;
 
         try {
             $bridgeRequest = Http::timeout(30)->withHeaders(['ngrok-skip-browser-warning' => 'true']);
@@ -234,7 +261,8 @@ class ApplicantsController extends Controller
                 'manual_full_name' => $studentData['manual_full_name'],
                 'email' => $studentData['email'],
             ]));
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::warning('Bridge proxy failed (local save OK)', ['error' => $e->getMessage()]);
         }
     }

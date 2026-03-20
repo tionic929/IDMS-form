@@ -18,6 +18,8 @@ import DepartmentList from "./pages/Admin/Departments/DepartmentsIndex";
 // Lazy Load Other Pages
 const ProfileDetails = lazy(() => import("./pages/profileDetails"));
 const Instructions = lazy(() => import("./pages/instructions"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Settings = lazy(() => import("./pages/Admin/Settings/Settings"));
 const History = lazy(() => import("./pages/Admin/History/History"));
 
@@ -72,6 +74,8 @@ function App() {
               <Route path="/" element={<Welcome />} />
               <Route path="/submit-details" element={<ProfileDetails />} />
               <Route path="/how-to-submit" element={<Instructions />} />
+              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
               <Route
                 path="/login"

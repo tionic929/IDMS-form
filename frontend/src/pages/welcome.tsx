@@ -8,6 +8,7 @@ import ncbg from '@/assets/ncbg.png';
 // shadcn UI
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import SiteHeader from '@/components/SiteHeader';
 
 const NC_TEAL = '#00928a';
 
@@ -16,36 +17,7 @@ const Welcome: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 font-sans text-zinc-900">
-      <nav className="sticky top-0 z-50 bg-white dark:bg-zinc-950 border-b border-border px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="p-1.5 rounded-xl">
-              <img src={nclogo} alt="NC Logo" className="w-12 h-12 object-contain" />
-            </div>
-            <span className="font-black text-xl tracking-tighter text-teal-600">
-              NCnian School ID
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/how-to-submit')}
-              className="gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-            >
-              <HelpCircle className="h-4 w-4" /> Support
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              className="hidden sm:flex rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[10px] uppercase tracking-widest"
-              onClick={() => navigate('/submit-details')}
-            >
-              Get Started
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <main className="max-w-6xl mx-auto px-6 py-20 lg:py-24 grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
@@ -90,19 +62,6 @@ const Welcome: React.FC = () => {
             >
               How to Submit
             </Button>
-          </div>
-
-          <div className="flex items-center gap-4 pt-4">
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-10 w-10 rounded-full border-2 border-background bg-muted overflow-hidden flex items-center justify-center font-bold text-[10px] text-muted-foreground">
-                  {String.fromCharCode(64 + i)}
-                </div>
-              ))}
-            </div>
-            <p className="text-xs font-bold text-muted-foreground">
-              <span className="text-foreground">2,400+</span> Students processed this semester
-            </p>
           </div>
         </motion.div>
 
@@ -162,7 +121,7 @@ const Welcome: React.FC = () => {
             </div>
           </div>
           <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase text-center md:text-right">
-            Build 0.4A © {new Date().getFullYear()} Northeastern College · Developed by <br /><span className="text-foreground">Sherwin Adonis Vizcarra - II</span>
+            Build 0.5A © {new Date().getFullYear()} Northeastern College · Developed by <br /><span className="text-foreground">Sherwin Adonis Vizcarra - II</span>
           </p>
         </div>
       </footer>

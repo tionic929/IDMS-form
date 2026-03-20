@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import SiteHeader from '@/components/SiteHeader';
 
 const NC_TEAL = '#00928a';
 
@@ -42,37 +43,8 @@ const Instructions: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen bg-white dark:bg-zinc-950 font-sans pb-20 overflow-y-hidden">
-      <nav className="sticky top-0 z-50 bg-white dark:bg-zinc-950 border-b border-border px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="p-1.5 rounded-xl">
-              <img src={nclogo} alt="NC Logo" className="w-12 h-12 object-contain" />
-            </div>
-            <span className="font-black text-xl tracking-tighter text-teal-600">
-              NCnian School ID
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/how-to-submit')}
-              className="gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-            >
-              <HelpCircle className="h-4 w-4" /> Support
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              className="hidden sm:flex rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[10px] uppercase tracking-widest"
-              onClick={() => navigate('/submit-details')}
-            >
-              Get Started
-            </Button>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-white sm:bg-slate-50 font-sans pb-20 selection:bg-[#001f3f]/10">
+      <SiteHeader />
 
       {/* Content */}
       <main className="max-w-6xl mx-auto px-6 py-12">
