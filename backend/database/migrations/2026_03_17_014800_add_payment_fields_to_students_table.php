@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            $table->string('payment_type')->nullable()->after('signature_picture');
-            $table->string('payment_proof')->nullable()->after('payment_type');
+            if (!Schema::hasColumn('students', 'payment_type')) {
+                $table->string('payment_type')->nullable()->after('signature_picture');
+                $table->string('payment_proof')->nullable()->after('payment_type');
+            }
         });
     }
 

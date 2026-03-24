@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Pencil, Maximize2 } from 'lucide-react';
+import { Camera, Pencil, Maximize2, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface ApplicationModalsProps {
   idImageSrc: string | null;
@@ -17,6 +17,22 @@ interface ApplicationModalsProps {
   showSignaturePad: boolean;
   onSignatureSaved: (file: File) => void;
   onSignatureCancel: () => void;
+
+  // Status & Success
+  applicationStatus?: 'idle' | 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string | null;
+  onGoHome?: () => void;
+
+  // Replacement / Existing
+  showReplacementModal?: boolean;
+  onDismissReplacement?: () => void;
+  idNumber?: string;
+  fetchedCourse?: string;
+  getDeptLogo?: (course: string) => string;
+
+  showExistingRecordModal?: boolean;
+  onSwitchToReplacement?: () => void;
+  onUseDifferentId?: () => void;
 }
 
 export default function ApplicationModals({
@@ -25,7 +41,18 @@ export default function ApplicationModals({
   onIdCancel,
   showSignaturePad,
   onSignatureSaved,
-  onSignatureCancel
+  onSignatureCancel,
+  applicationStatus = 'idle',
+  rejectionReason = null,
+  onGoHome = () => {},
+  showReplacementModal = false,
+  onDismissReplacement = () => {},
+  idNumber = '',
+  fetchedCourse = '',
+  getDeptLogo = () => '',
+  showExistingRecordModal = false,
+  onSwitchToReplacement = () => {},
+  onUseDifferentId = () => {}
 }: ApplicationModalsProps) {
 
   // ── ID Cropper State ──
@@ -198,6 +225,134 @@ export default function ApplicationModals({
               <Button
                 className="flex-1 h-14 rounded-2xl text-[10px] font-bold uppercase tracking-widest bg-[#001f3f] text-white shadow-lg"
                 onClick={handleSigCropSave}>Save Final</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* ── Pending Notification Modal ── */}
+      <Dialog open={applicationStatus === 'pending'}>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-2xl border-none shadow-2xl z-[100] [&>button]:hidden">
+          <div className="bg-amber-500 p-8 flex flex-col items-center justify-center text-white">
+            <Clock className="h-16 w-16 mb-4 animate-pulse opacity-90" />
+            <h2 className="text-2xl font-black uppercase tracking-tight text-center">Under Review</h2>
+            <p className="text-amber-100 mt-2 text-center text-sm font-medium">Your application is in queue</p>
+          </div>
+          <div className="p-8 bg-slate-50 text-center">
+            <p className="text-slate-600 mb-6 text-sm">
+              Please wait while the administrator reviews your details. Do not close this page.
+              <br/><br/>
+              <b><span className="text-amber-600 animate-pulse">Waiting for approval...</span></b>
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Approved Success Modal ── */}
+      <Dialog open={applicationStatus === 'approved'} onOpenChange={onGoHome}>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-2xl border-none shadow-2xl z-[100]">
+          <div className="bg-emerald-600 p-10 flex flex-col items-center justify-center text-white">
+            <CheckCircle2 className="h-20 w-20 mb-4 opacity-90" />
+            <h2 className="text-3xl font-black uppercase tracking-tighter text-center leading-none">Record<br/>Complete</h2>
+          </div>
+          <div className="p-8 bg-white text-center space-y-6 flex flex-col items-center">
+            <p className="text-slate-500 font-medium text-sm">
+              Your ID Application has been thoroughly verified and securely registered in the primary database.
+            </p>
+            <Button
+              onClick={onGoHome}
+              className="h-14 px-8 rounded-xl font-bold uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white w-full max-w-[200px]"
+            >
+              Return Home
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Rejected Modal ── */}
+      <Dialog open={applicationStatus === 'rejected'} onOpenChange={onGoHome}>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-2xl border-none shadow-2xl z-[100]">
+          <div className="bg-red-600 p-10 flex flex-col items-center justify-center text-white">
+            <XCircle className="h-20 w-20 mb-4 opacity-90" />
+            <h2 className="text-3xl font-black uppercase tracking-tighter text-center leading-none">Application<br/>Declined</h2>
+          </div>
+          <div className="p-8 bg-white space-y-6">
+            <div className="bg-red-50 text-red-700 p-4 rounded-lg border border-red-100">
+              <span className="text-[10px] font-bold uppercase tracking-widest block mb-1 opacity-70">Reason for Rejection</span>
+              <p className="font-medium">{rejectionReason || "Your application did not pass verification."}</p>
+            </div>
+            <p className="text-slate-500 text-sm text-center">
+              Please correct the issues and submit a new application.
+            </p>
+            <div className="flex justify-center">
+              <Button
+                onClick={onGoHome}
+                className="h-14 px-8 rounded-xl font-bold uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white w-full max-w-[200px]"
+              >
+                Start Over
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Replacement Confirmation Modal (OLD student) ── */}
+      <Dialog open={showReplacementModal} onOpenChange={onDismissReplacement}>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-2xl border-none shadow-2xl z-[100]">
+          <div className="bg-orange-500 p-8 flex flex-col items-center text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+            <RefreshCw className="h-16 w-16 mb-4 opacity-90 relative z-10" />
+            <h2 className="text-2xl font-black uppercase tracking-tight text-center relative z-10">Record Verified</h2>
+            <p className="text-orange-100 mt-2 text-center text-sm font-medium relative z-10">Proceeding with ID Replacement</p>
+          </div>
+          <div className="p-8 bg-slate-50 flex flex-col items-center gap-6">
+            <div className="relative h-24 w-24 rounded-2xl bg-white shadow-xl flex items-center justify-center border-4 border-white overflow-hidden shrink-0">
+              <img src={getDeptLogo(fetchedCourse)} alt={fetchedCourse} className="h-16 w-16 object-contain" />
+            </div>
+            <div className="text-center w-full">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Student ID</span>
+              <div className="bg-white border border-slate-200 py-3 rounded-xl shadow-sm text-xl font-black text-slate-800 tracking-wider">
+                {idNumber}
+              </div>
+            </div>
+            <p className="text-slate-500 text-sm text-center leading-relaxed">
+              Your active record was found. Please provide the reason for replacement and confirm your details.
+            </p>
+            <Button
+              className="w-full h-14 rounded-xl text-xs font-bold uppercase tracking-widest bg-slate-900 hover:bg-black text-white shadow-lg"
+              onClick={onDismissReplacement}
+            >
+              Continue Application
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Existing Record Redirect (NEW student) ── */}
+      <Dialog open={showExistingRecordModal} onOpenChange={onUseDifferentId}>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-2xl border-none shadow-2xl z-[100]">
+          <div className="bg-red-500 p-8 flex flex-col items-center text-white">
+            <AlertCircle className="h-16 w-16 mb-4 opacity-90" />
+            <h2 className="text-2xl font-black uppercase tracking-tight text-center">Record Exists</h2>
+            <p className="text-red-100 mt-2 text-center text-sm font-medium block">ID Number is already registered</p>
+          </div>
+          <div className="p-8 bg-white space-y-6">
+            <p className="text-slate-600 text-sm italic text-center text-balance leading-relaxed">
+              Our system shows this ID has already been issued. Are you trying to request a replacement?
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button
+                className="w-full h-14 rounded-xl font-bold uppercase tracking-widest bg-amber-500 hover:bg-amber-600 text-white shadow-md flex items-center justify-center gap-2"
+                onClick={onSwitchToReplacement}
+              >
+                <RefreshCw className="h-4 w-4" /> Request Replacement instead
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-14 rounded-xl font-bold uppercase tracking-widest border-slate-200 text-slate-500 hover:bg-slate-50"
+                onClick={onUseDifferentId}
+              >
+                Use Different ID
+              </Button>
             </div>
           </div>
         </DialogContent>

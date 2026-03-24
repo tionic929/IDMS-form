@@ -17,10 +17,17 @@ Route::post('/login', [AuthController::class , 'login'])->name('login');
 // Public ID Application Submission (5 requests/min per IP)
 Route::post('/students', [ApplicantsController::class , 'store'])->middleware('throttle:5,1')->name('applicants.store');
 
+use App\Http\Controllers\ApplicationStatusController;
+
 // Public Verification & Checking
 Route::post('/reports/verify', [ReportsController::class , 'verifyIdNumber'])->middleware('throttle:10,1');
 Route::post('/students/check-existing', [ApplicantsController::class, 'checkExistingRecord']);
 Route::post('/send-otp', [ApplicantsController::class, 'sendOtp'])->middleware('throttle:5,1');
+
+// Application Status System
+Route::get('/applications/{id_number}/status', [ApplicationStatusController::class, 'status'])->middleware('throttle:30,1');
+Route::post('/applications/{id_number}/approve', [ApplicationStatusController::class, 'approve']);
+Route::post('/applications/{id_number}/reject', [ApplicationStatusController::class, 'reject']);
 
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {

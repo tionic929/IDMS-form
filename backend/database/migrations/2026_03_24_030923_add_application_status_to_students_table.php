@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration 
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -12,9 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            if (!Schema::hasColumn('students', 'manual_full_name')) {
-                $table->string('manual_full_name')->nullable()->after('last_name');
-            }
+            $table->string('application_status')->default('pending')->after('has_card'); // pending, approved, rejected
+            $table->text('rejection_reason')->nullable()->after('application_status');
         });
     }
 
@@ -24,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            $table->dropColumn('manual_full_name');
+            $table->dropColumn(['application_status', 'rejection_reason']);
         });
     }
 };

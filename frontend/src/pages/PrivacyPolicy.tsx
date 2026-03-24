@@ -22,7 +22,7 @@ const PrivacyPolicy: React.FC = () => {
         }
       />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-10">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl bg-[#001f3f]/5 flex items-center justify-center text-[#001f3f]">
             <ShieldCheck size={20} strokeWidth={2.5} />
@@ -35,7 +35,7 @@ const PrivacyPolicy: React.FC = () => {
 
         <Card className="border-0 sm:border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
           <CardContent className="p-6 sm:p-10 prose prose-slate max-w-none">
-            
+
             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 mb-8 flex items-start gap-3">
               <CheckCircle2 className="text-emerald-500 w-5 h-5 shrink-0 mt-0.5" />
               <p className="text-sm font-medium text-emerald-800 m-0">

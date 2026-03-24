@@ -145,10 +145,32 @@ const SubmitDetails: React.FC = () => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [expectedEmail, setExpectedEmail] = useState<string | null>(null);
 
-  // ── Submission state ──
+  // ── Submission & Status state ──
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [status, setStatus] = useState<'success' | 'error' | ''>('');
+  const [applicationStatus, setApplicationStatus] = useState<'idle' | 'pending' | 'approved' | 'rejected'>('idle');
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // ── Status Polling ──
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (applicationStatus === 'pending') {
+      interval = setInterval(async () => {
+        try {
+          const res = await api.get(`/applications/${form.idNumber}/status`);
+          if (res.data.status && res.data.status !== 'pending') {
+            setApplicationStatus(res.data.status as any);
+            if (res.data.rejection_reason) {
+              setRejectionReason(res.data.rejection_reason);
+            }
+          }
+        } catch (e) {
+          console.error('Status polling failed', e);
+        }
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [applicationStatus, form.idNumber]);
 
   // ── Image / Signature state ──
   const [rawIdImage, setRawIdImage] = useState<string | null>(null);
@@ -378,10 +400,11 @@ const SubmitDetails: React.FC = () => {
         if (value !== null) formData.append(key, value as string | Blob);
       });
       await api.post('/students', formData);
-      setStatus('success');
+      setApplicationStatus('pending');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
-      setStatus('error');
+      setApplicationStatus('idle');
+      setErrorMessage('Submission failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -876,120 +899,87 @@ const SubmitDetails: React.FC = () => {
                           )}
 
                           {applicationType === 'NEW' && (
-                            <>
-                              <FloatingLabelInput
-                                label="LRN (Learner Reference Number)"
-                                value={form.lrn}
-                                onChange={(v: string) => setForm({ ...form, lrn: v.replace(/\D/g, '').slice(0, 12) })}
-                                status={form.lrn.length > 0 ? (form.lrn.length >= 6 ? 'valid' : 'invalid') : 'idle'}
-                                icon={<FileCheck className="h-4 w-4" />}
-                              />
-                              <FloatingLabelInput
-                                label="Full Name of Guardian"
-                                value={form.guardianName}
-                                onChange={(v: string) => setForm({ ...form, guardianName: v })}
-                                status={form.guardianName.length > 0 ? (form.guardianName.length >= 3 ? 'valid' : 'invalid') : 'idle'}
-                                icon={<Contact className="h-4 w-4" />}
-                              />
-                              <FloatingLabelInput
-                                label="Guardian Contact No. (09XXXXXXXXX)"
-                                value={form.guardianContact}
-                                onChange={(v: string) => setForm({ ...form, guardianContact: v.replace(/\D/g, '').slice(0, 11) })}
-                                status={form.guardianContact.length > 0 ? (form.guardianContact.length === 11 ? 'valid' : 'invalid') : 'idle'}
-                              />
-                            </>
+                            <FloatingLabelInput
+                              label="LRN (Learner Reference Number)"
+                              value={form.lrn}
+                              onChange={(v: string) => setForm({ ...form, lrn: v.replace(/\D/g, '').slice(0, 12) })}
+                              status={form.lrn.length > 0 ? (form.lrn.length >= 6 ? 'valid' : 'invalid') : 'idle'}
+                              icon={<FileCheck className="h-4 w-4" />}
+                            />
                           )}
 
-                          {/* OLD/Reissuance student */}
-                          {applicationType === 'OLD' && (
-                            <>
-                              <FloatingLabelInput
-                                label="Full Name of Guardian"
-                                value={form.guardianName}
-                                onChange={(v: string) => setForm({ ...form, guardianName: v })}
-                                status={form.guardianName.length > 0 ? (form.guardianName.length >= 3 ? 'valid' : 'invalid') : 'idle'}
-                                icon={<Contact className="h-4 w-4" />}
-                              />
-                              <FloatingLabelInput
-                                label="Guardian Contact No. (09XXXXXXXXX)"
-                                value={form.guardianContact}
-                                onChange={(v: string) => setForm({ ...form, guardianContact: v.replace(/\D/g, '').slice(0, 11) })}
-                                status={form.guardianContact.length > 0 ? (form.guardianContact.length === 11 ? 'valid' : 'invalid') : 'idle'}
-                              />
-                              <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">
-                                  Reason for Reissuance <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                  className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
-                                  value={form.reissuance_reason}
-                                  onChange={(e) => setForm({ ...form, reissuance_reason: e.target.value })}
-                                >
-                                  <option value="">Select Reason...</option>
-                                  {REISSUANCE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
-                                </select>
-                              </div>
-
-                              {/* Department Shift — only case where course is editable */}
-                              {form.reissuance_reason === 'Department Shift' && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: -8 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className="space-y-2"
-                                >
-                                  <label className="text-xs font-semibold text-slate-500 block px-2">
-                                    New Department / Course <span className="text-red-500">*</span>
-                                  </label>
-                                  <select
-                                    className="w-full h-14 border border-slate-200 bg-white px-6 rounded-xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
-                                    value={form.course}
-                                    onChange={(e) => setForm({ ...form, course: e.target.value })}
-                                  >
-                                    <option value="">Select New Course...</option>
-                                    {getFilteredCourses(form.schoolLevel).map(c => <option key={c} value={c}>{c}</option>)}
-                                  </select>
-                                </motion.div>
-                              )}
-                            </>
-                          )}
+                          {/* Shared Guardian Fields for Students */}
+                          <FloatingLabelInput
+                            label="Full Name of Guardian"
+                            value={form.guardianName}
+                            onChange={(v: string) => setForm({ ...form, guardianName: v })}
+                            status={form.guardianName.length > 0 ? (form.guardianName.length >= 3 ? 'valid' : 'invalid') : 'idle'}
+                            icon={<Contact className="h-4 w-4" />}
+                          />
+                          <FloatingLabelInput
+                            label="Guardian Contact No. (09XXXXXXXXX)"
+                            value={form.guardianContact}
+                            onChange={(v: string) => setForm({ ...form, guardianContact: v.replace(/\D/g, '').slice(0, 11) })}
+                            status={form.guardianContact.length > 0 ? (form.guardianContact.length === 11 ? 'valid' : 'invalid') : 'idle'}
+                          />
                         </>
                       )}
 
                       {/* EMPLOYEE-specific fields */}
-                      {userType === 'EMPLOYEE' && (
+                      {userType === 'EMPLOYEE' && applicationType === 'NEW' && (
                         <>
-                          {applicationType === 'NEW' && (
-                            <>
-                              <FloatingLabelInput
-                                label="Department / Role"
-                                value={form.department}
-                                onChange={(v: string) => setForm({ ...form, department: v })}
-                                status={form.department.length > 0 ? (form.department.length >= 2 ? 'valid' : 'invalid') : 'idle'}
-                                icon={<Briefcase className="h-4 w-4" />}
-                              />
-                              <FloatingLabelInput
-                                label="Contact Number"
-                                value={form.contactInfo}
-                                onChange={(v: string) => setForm({ ...form, contactInfo: v.replace(/\D/g, '').slice(0, 11) })}
-                                status={form.contactInfo.length > 0 ? (form.contactInfo.length >= 7 ? 'valid' : 'invalid') : 'idle'}
-                              />
-                            </>
-                          )}
+                          <FloatingLabelInput
+                            label="Department / Role"
+                            value={form.department}
+                            onChange={(v: string) => setForm({ ...form, department: v })}
+                            status={form.department.length > 0 ? (form.department.length >= 2 ? 'valid' : 'invalid') : 'idle'}
+                            icon={<Briefcase className="h-4 w-4" />}
+                          />
+                          <FloatingLabelInput
+                            label="Contact Number"
+                            value={form.contactInfo}
+                            onChange={(v: string) => setForm({ ...form, contactInfo: v.replace(/\D/g, '').slice(0, 11) })}
+                            status={form.contactInfo.length > 0 ? (form.contactInfo.length >= 7 ? 'valid' : 'invalid') : 'idle'}
+                          />
+                        </>
+                      )}
 
-                          {applicationType === 'OLD' && (
-                            <div className="space-y-2">
+                      {/* Reason for Replacement (Shared for OLD Students and Employees) */}
+                      {applicationType === 'OLD' && (
+                        <>
+                          <div className="space-y-2 mt-2">
+                            <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 block px-2">
+                              Reason for Replacement <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              className="w-full h-14 border border-slate-200 bg-white px-6 rounded-2xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
+                              value={form.reissuance_reason}
+                              onChange={(e) => setForm({ ...form, reissuance_reason: e.target.value })}
+                            >
+                              <option value="">Select Reason...</option>
+                              {REISSUANCE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                          </div>
+
+                          {/* Department Shift — only case where course is editable */}
+                          {userType === 'STUDENT' && form.reissuance_reason === 'Department Shift' && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="space-y-2 mt-4"
+                            >
                               <label className="text-xs font-semibold text-slate-500 block px-2">
-                                Reason for Replacement <span className="text-red-500">*</span>
+                                New Department / Course <span className="text-red-500">*</span>
                               </label>
                               <select
                                 className="w-full h-14 border border-slate-200 bg-white px-6 rounded-xl text-base font-semibold focus:border-[#001f3f] focus:ring-4 focus:ring-navy-900/5 outline-none shadow-sm"
-                                value={form.reissuance_reason}
-                                onChange={(e) => setForm({ ...form, reissuance_reason: e.target.value })}
+                                value={form.course}
+                                onChange={(e) => setForm({ ...form, course: e.target.value })}
                               >
-                                <option value="">Select Reason...</option>
-                                {REISSUANCE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                <option value="">Select New Course...</option>
+                                {getFilteredCourses(form.schoolLevel).map(c => <option key={c} value={c}>{c}</option>)}
                               </select>
-                            </div>
+                            </motion.div>
                           )}
                         </>
                       )}
@@ -1212,13 +1202,13 @@ const SubmitDetails: React.FC = () => {
                   <Card className="border-0 sm:border border-slate-200 shadow-none sm:shadow-sm rounded-none sm:rounded-2xl overflow-hidden bg-transparent sm:bg-white -mx-4 sm:mx-0">
                     <CardContent className="p-2 sm:p-6 space-y-5">
                       <ReviewRow label="User Type" value={userType ?? '—'} />
-                      <ReviewRow label="Application Mode" value={isReissuance ? 'Reissuance' : 'New Application'} highlight={isReissuance ? 'orange' : 'green'} />
+                      <ReviewRow label="Application Mode" value={isReissuance ? 'Replacement' : 'New Application'} highlight={isReissuance ? 'orange' : 'green'} />
                       <ReviewRow label="ID Number" value={form.idNumber} />
                       <ReviewRow label="Full Name" value={form.manual_full_name} />
                       <ReviewRow label="Email" value={form.email} />
                       {form.course && <ReviewRow label="Course / Dept" value={form.course} />}
                       {form.address && <ReviewRow label="Address" value={form.address} />}
-                      {form.reissuance_reason && <ReviewRow label="Reissuance Reason" value={form.reissuance_reason} />}
+                      {form.reissuance_reason && <ReviewRow label="Replacement Reason" value={form.reissuance_reason} />}
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-semibold text-slate-500 w-28">ID Photo</span>
                         {idPreview
@@ -1327,130 +1317,32 @@ const SubmitDetails: React.FC = () => {
             showSignaturePad={showSigPad}
             onSignatureSaved={(file) => { setForm(prev => ({ ...prev, signature_picture: file })); setShowSigPad(false); }}
             onSignatureCancel={() => setShowSigPad(false)}
+
+            applicationStatus={applicationStatus}
+            rejectionReason={rejectionReason}
+            onGoHome={() => navigate('/')}
+
+            showReplacementModal={showReissuanceModal}
+            onDismissReplacement={() => setShowReissuanceModal(false)}
+            idNumber={form.idNumber}
+            fetchedCourse={fetchedCourse}
+            getDeptLogo={(c) => getDeptLogo(c) || ''}
+
+            showExistingRecordModal={showExistingRecordModal}
+            onSwitchToReplacement={() => {
+              setShowExistingRecordModal(false);
+              setApplicationType('OLD');
+              setIsSecondIssuance(true);
+              setVerificationStatus('valid');
+              setCurrentStep(2);
+            }}
+            onUseDifferentId={() => {
+              setShowExistingRecordModal(false);
+              setForm(prev => ({ ...prev, idNumber: '' }));
+              setVerificationStatus('idle');
+            }}
           />
         </Suspense>
-
-        {/* Success Dialog */}
-        <Dialog open={status === 'success'} onOpenChange={() => { }}>
-          <DialogContent
-            className="max-w-md p-0 overflow-hidden bg-white rounded-[2.5rem] border-none shadow-2xl"
-            onPointerDownOutside={(e) => e.preventDefault()}
-          >
-            <div className="flex flex-col items-center text-center px-10 py-14 space-y-6">
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
-                className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center shadow-xl shadow-emerald-500/30"
-              >
-                <CheckCircle2 className="h-12 w-12 text-white" strokeWidth={2.5} />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="space-y-3"
-              >
-                <h2 className="text-2xl font-black tracking-tight text-zinc-900">Application Submitted!</h2>
-                <p className="text-sm text-zinc-500 font-medium leading-relaxed max-w-xs mx-auto">
-                  Your ID application has been received and is now being processed. Please check your email for updates.
-                </p>
-              </motion.div>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="w-full pt-4">
-                <Button
-                  onClick={() => navigate('/')}
-                  className="w-full h-14 rounded-2xl bg-[#001f3f] text-white font-black text-xs tracking-[0.2em] uppercase shadow-xl shadow-[#001f3f]/20 hover:bg-[#001f3f]/90 transition-all active:scale-95"
-                >
-                  Back to Home
-                </Button>
-              </motion.div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Reissuance Confirmation Modal */}
-        <Dialog open={showReissuanceModal} onOpenChange={setShowReissuanceModal}>
-          <DialogContent
-            className="max-w-md p-0 overflow-hidden bg-white rounded-[2.5rem] border-none shadow-2xl"
-            onPointerDownOutside={(e) => e.preventDefault()}
-          >
-            <div className="flex flex-col items-center text-center px-10 py-14 space-y-6">
-              <div className="w-24 h-24 rounded-full bg-orange-50 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-orange-100 rounded-full animate-pulse" />
-                <Zap className="h-12 w-12 text-orange-600 relative z-10" />
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-2xl font-black tracking-tight text-zinc-900 uppercase">Existing Record Found</h2>
-                <div className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
-                  <p className="text-[11px] text-orange-700 font-bold uppercase tracking-tight leading-relaxed">
-                    A record for ID <span className="underline decoration-2">{form.idNumber}</span> already exists.
-                    You are now in <span className="text-orange-900 border-b-2 border-orange-900/20">RE-ISSUANCE MODE</span>.
-                  </p>
-                </div>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-relaxed pt-2">
-                  Previous data has been pre-filled. Please verify all details and provide a reason for the replacement ID.
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowReissuanceModal(false)}
-                className="w-full h-16 rounded-2xl bg-orange-600 text-white font-black text-xs tracking-[0.2em] uppercase shadow-xl shadow-orange-600/20 hover:bg-orange-700 transition-all active:scale-95 group"
-              >
-                Continue as Reissuance <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Existing Record Found — NEW applicant redirect modal */}
-        <Dialog open={showExistingRecordModal} onOpenChange={setShowExistingRecordModal}>
-          <DialogContent
-            className="max-w-md p-0 overflow-hidden bg-white rounded-[2.5rem] border-none shadow-2xl"
-            onPointerDownOutside={(e) => e.preventDefault()}
-          >
-            <div className="flex flex-col items-center text-center px-8 sm:px-10 py-12 space-y-6">
-              <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-                <AlertCircle className="h-10 w-10 text-red-600 relative z-10" />
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-xl font-black tracking-tight text-zinc-900">Record Already Exists</h2>
-                <div className="p-4 bg-red-50/50 rounded-2xl border border-red-100">
-                  <p className="text-xs text-red-700 font-semibold leading-relaxed">
-                    The ID Number <span className="font-black underline decoration-2">{form.idNumber}</span> already has an existing application on file.
-                  </p>
-                </div>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed pt-1">
-                  Since you selected <strong>"First-time Applicant"</strong>, you cannot proceed with an ID that is already registered. Please go back and select <strong>"Replacement ID"</strong> instead.
-                </p>
-              </div>
-              <div className="w-full space-y-3 pt-2">
-                <Button
-                  onClick={() => {
-                    setShowExistingRecordModal(false);
-                    setApplicationType('OLD');
-                    setIsSecondIssuance(true);
-                    setVerificationStatus('valid');
-                    setCurrentStep(2);
-                  }}
-                  className="w-full h-14 rounded-2xl bg-[#001f3f] text-white font-black text-xs tracking-[0.15em] uppercase shadow-lg shadow-[#001f3f]/20 hover:bg-[#001f3f]/90 transition-all active:scale-95 group"
-                >
-                  Switch to Replacement ID <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowExistingRecordModal(false);
-                    setForm(prev => ({ ...prev, idNumber: '' }));
-                    setVerificationStatus('idle');
-                  }}
-                  className="w-full h-12 rounded-2xl text-slate-500 font-semibold text-xs hover:bg-slate-50 transition-all"
-                >
-                  Use a Different ID Number
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
 
       </div>
 
@@ -1461,16 +1353,16 @@ const SubmitDetails: React.FC = () => {
 
 // ─── Helper Components ────────────────────────────────────────────────────────
 
-const SectionHeader = ({ icon, title }: { icon: React.ReactNode; title: string }) => (
+const SectionHeader = React.memo(({ icon, title }: { icon: React.ReactNode; title: string }) => (
   <div className="flex items-center gap-3 pl-1">
     <div className="w-10 h-10 rounded-xl bg-[#001f3f]/5 flex items-center justify-center text-slate-700">
       {React.cloneElement(icon as React.ReactElement, { size: 18, strokeWidth: 2 } as any)}
     </div>
     <h2 className="text-lg font-bold text-slate-800">{title}</h2>
   </div>
-);
+));
 
-const ReviewRow = ({
+const ReviewRow = React.memo(({
   label, value, highlight
 }: {
   label: string; value: string; highlight?: 'orange' | 'green';
@@ -1486,9 +1378,9 @@ const ReviewRow = ({
       {value}
     </span>
   </div>
-);
+));
 
-const FloatingLabelInput = ({
+const FloatingLabelInput = React.memo(({
   label, value, onChange, placeholder, status = 'idle',
   isLoading = false, type = "text", icon, statusLabel
 }: any) => {
@@ -1536,6 +1428,6 @@ const FloatingLabelInput = ({
       </div>
     </div>
   );
-};
+});
 
 export default SubmitDetails;

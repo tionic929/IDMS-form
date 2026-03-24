@@ -92,6 +92,7 @@ class ApplicantsController extends Controller
                 'reissuance_reason' => $validated['reissuance_reason'] ?? null,
                 'is_archived' => false,
                 'archived_at' => null,
+                'application_status' => 'pending',
             ];
 
             if ($idPath)
@@ -232,38 +233,43 @@ class ApplicantsController extends Controller
         if (!$bridgeUrl)
             return;
 
-        try {
-            $bridgeRequest = Http::timeout(30)->withHeaders(['ngrok-skip-browser-warning' => 'true']);
-
-            if ($request->hasFile('id_picture')) {
-                $file = $request->file('id_picture');
-                $bridgeRequest = $bridgeRequest->attach('id_picture', file_get_contents($file->getRealPath()), $file->getClientOriginalName());
-            }
-
-            if ($request->hasFile('signature_picture')) {
-                $file = $request->file('signature_picture');
-                $bridgeRequest = $bridgeRequest->attach('signature_picture', file_get_contents($file->getRealPath()), $file->getClientOriginalName());
-            }
-
-            if ($request->hasFile('payment_proof')) {
-                $file = $request->file('payment_proof');
-                $bridgeRequest = $bridgeRequest->attach('payment_proof', file_get_contents($file->getRealPath()), $file->getClientOriginalName());
-            }
-
-            $bridgeRequest->post("{$bridgeUrl}/application-submit", array_merge($studentData, [
-                'idNumber' => $studentData['id_number'],
-                'firstName' => $studentData['first_name'],
-                'middleInitial' => $studentData['middle_initial'],
-                'lastName' => $studentData['last_name'],
-                'guardianName' => $studentData['guardian_name'],
-                'guardianContact' => $studentData['guardian_contact'],
-                'paymentType' => $studentData['payment_type'],
-                'manual_full_name' => $studentData['manual_full_name'],
-                'email' => $studentData['email'],
-            ]));
+        // Read files into memory to send after response
+        $filesPayload = [];
+        if ($request->hasFile('id_picture')) {
+            $file = $request->file('id_picture');
+            $filesPayload['id_picture'] = ['data' => file_get_contents($file->getRealPath()), 'name' => $file->getClientOriginalName()];
         }
-        catch (\Exception $e) {
-            Log::warning('Bridge proxy failed (local save OK)', ['error' => $e->getMessage()]);
+        if ($request->hasFile('signature_picture')) {
+            $file = $request->file('signature_picture');
+            $filesPayload['signature_picture'] = ['data' => file_get_contents($file->getRealPath()), 'name' => $file->getClientOriginalName()];
         }
+        if ($request->hasFile('payment_proof')) {
+            $file = $request->file('payment_proof');
+            $filesPayload['payment_proof'] = ['data' => file_get_contents($file->getRealPath()), 'name' => $file->getClientOriginalName()];
+        }
+
+        dispatch(function () use ($bridgeUrl, $studentData, $filesPayload) {
+            try {
+                $bridgeRequest = \Illuminate\Support\Facades\Http::timeout(30)->withHeaders(['ngrok-skip-browser-warning' => 'true']);
+
+                foreach ($filesPayload as $key => $fileInfo) {
+                    $bridgeRequest = $bridgeRequest->attach($key, $fileInfo['data'], $fileInfo['name']);
+                }
+
+                $bridgeRequest->post("{$bridgeUrl}/application-submit", array_merge($studentData, [
+                    'idNumber' => $studentData['id_number'],
+                    'firstName' => $studentData['first_name'],
+                    'middleInitial' => $studentData['middle_initial'],
+                    'lastName' => $studentData['last_name'],
+                    'guardianName' => $studentData['guardian_name'],
+                    'guardianContact' => $studentData['guardian_contact'],
+                    'paymentType' => $studentData['payment_type'],
+                    'manual_full_name' => $studentData['manual_full_name'],
+                    'email' => $studentData['email'],
+                ]));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Bridge proxy failed (local save OK)', ['error' => $e->getMessage()]);
+            }
+        })->afterResponse();
     }
 }

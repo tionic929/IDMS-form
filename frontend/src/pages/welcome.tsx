@@ -16,11 +16,11 @@ const Welcome: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 font-sans text-zinc-900">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-zinc-950 font-sans text-zinc-900">
       <SiteHeader />
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <main className="max-w-6xl mx-auto px-6 py-20 lg:py-24 grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-20 lg:py-24 grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -120,8 +120,22 @@ const Welcome: React.FC = () => {
               </a>
             </div>
           </div>
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => navigate('/privacy-policy')}
+              className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase hover:text-primary transition-colors"
+            >
+              Privacy Policy
+            </button>
+            <button
+              onClick={() => navigate('/terms-and-conditions')}
+              className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase hover:text-primary transition-colors"
+            >
+              Terms & Conditions
+            </button>
+          </div>
           <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase text-center md:text-right">
-            Build 0.5A © {new Date().getFullYear()} Northeastern College · Developed by <br /><span className="text-foreground">Sherwin Adonis Vizcarra - II</span>
+            Build 0.5B © {new Date().getFullYear()} Northeastern College · Developed by <br /><span className="text-foreground">Sherwin Adonis Vizcarra - II</span>
           </p>
         </div>
       </footer>
