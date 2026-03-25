@@ -385,6 +385,15 @@ const SubmitDetails: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If user hits Enter on an earlier step, try to advance to next step instead
+    if (currentStep < 7) {
+      if (stepCanProgress()) goNext();
+      return;
+    }
+
+    if (!isStep5Valid) return;
+
     setIsSubmitting(true);
 
     if (isReissuance) {
