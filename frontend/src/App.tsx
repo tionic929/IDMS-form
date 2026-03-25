@@ -16,7 +16,7 @@ import ImportReports from "./pages/Admin/Reports/importReports";
 import DepartmentList from "./pages/Admin/Departments/DepartmentsIndex";
 
 // Lazy Load Other Pages
-const ProfileDetails = lazy(() => import("./pages/profileDetails"));
+const ProfileDetails = lazy(() => import("./pages/SubmitDetails"));
 const Instructions = lazy(() => import("./pages/instructions"));
 const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
