@@ -108,8 +108,8 @@ class ApplicantsController extends Controller
 
             broadcast(new ApplicationSubmitted($student))->toOthers();
 
-            // Bridge proxy (optional, but maintained)
-            $this->proxyToBridge($request, $studentData);
+            // Bridge proxy — pass saved paths so dispatch closure can read files cleanly
+            $this->proxyToBridge($studentData, $idPath, $sigPath, $paymentPath);
 
             return response()->json([
                 'message' => 'Application submitted successfully!',
@@ -222,54 +222,83 @@ class ApplicantsController extends Controller
     {
         $archived = Student::archived()->orderBy('archived_at', 'desc')->get();
         return response()->json($archived);
-    }
-
-    /**
+    }    /**
      * Helper to proxy data to bridge URL.
      */
-    private function proxyToBridge(Request $request, array $studentData)
+    private function proxyToBridge(array $studentData, ?string $idPath, ?string $sigPath, ?string $paymentPath)
     {
         $bridgeUrl = config('services.bridge.url');
-        if (!$bridgeUrl)
+        if (!$bridgeUrl) {
+            Log::warning('Bridge proxy skipped: BRIDGE_URL not set in .env');
             return;
-
-        // Read files into memory to send after response
-        $filesPayload = [];
-        if ($request->hasFile('id_picture')) {
-            $file = $request->file('id_picture');
-            $filesPayload['id_picture'] = ['data' => file_get_contents($file->getRealPath()), 'name' => $file->getClientOriginalName()];
-        }
-        if ($request->hasFile('signature_picture')) {
-            $file = $request->file('signature_picture');
-            $filesPayload['signature_picture'] = ['data' => file_get_contents($file->getRealPath()), 'name' => $file->getClientOriginalName()];
-        }
-        if ($request->hasFile('payment_proof')) {
-            $file = $request->file('payment_proof');
-            $filesPayload['payment_proof'] = ['data' => file_get_contents($file->getRealPath()), 'name' => $file->getClientOriginalName()];
         }
 
-        dispatch(function () use ($bridgeUrl, $studentData, $filesPayload) {
+        // Check if the request already came from the bridge to prevent infinite loops
+        if (request()->header('X-Bridge-Source') === 'true') {
+            Log::info('Bridge proxy skipped: Request originated from bridge');
+            return;
+        }
+
+        // Resolve absolute disk paths once
+        $resolvedPaths = [];
+        if ($idPath) $resolvedPaths['id_picture'] = storage_path("app/public/{$idPath}");
+        if ($sigPath) $resolvedPaths['signature_picture'] = storage_path("app/public/{$sigPath}");
+        if ($paymentPath) $resolvedPaths['payment_proof'] = storage_path("app/public/{$paymentPath}");
+
+        $logic = function () use ($bridgeUrl, $studentData, $resolvedPaths) {
             try {
-                $bridgeRequest = \Illuminate\Support\Facades\Http::timeout(30)->withHeaders(['ngrok-skip-browser-warning' => 'true']);
+                Log::info("Attempting bridge proxy to: {$bridgeUrl}");
+                
+                $http = \Illuminate\Support\Facades\Http::timeout(60)
+                    ->withHeaders([
+                        'ngrok-skip-browser-warning' => 'true',
+                        'Accept' => 'application/json'
+                    ]);
 
-                foreach ($filesPayload as $key => $fileInfo) {
-                    $bridgeRequest = $bridgeRequest->attach($key, $fileInfo['data'], $fileInfo['name']);
+                // Attach files by reading from disk
+                foreach ($resolvedPaths as $field => $absolutePath) {
+                    if (file_exists($absolutePath)) {
+                        $http = $http->attach($field, file_get_contents($absolutePath), basename($absolutePath));
+                    }
                 }
 
-                $bridgeRequest->post("{$bridgeUrl}/application-submit", array_merge($studentData, [
-                    'idNumber' => $studentData['id_number'],
-                    'firstName' => $studentData['first_name'],
-                    'middleInitial' => $studentData['middle_initial'],
-                    'lastName' => $studentData['last_name'],
-                    'guardianName' => $studentData['guardian_name'],
-                    'guardianContact' => $studentData['guardian_contact'],
-                    'paymentType' => $studentData['payment_type'],
+                $response = $http->post("{$bridgeUrl}/application-submit", [
+                    'idNumber'       => $studentData['id_number'],
+                    'firstName'      => $studentData['first_name'],
+                    'middleInitial'  => $studentData['middle_initial'],
+                    'lastName'       => $studentData['last_name'],
                     'manual_full_name' => $studentData['manual_full_name'],
-                    'email' => $studentData['email'],
-                ]));
+                    'email'          => $studentData['email'],
+                    'course'         => $studentData['course'] ?? '',
+                    'address'        => $studentData['address'],
+                    'guardianName'   => $studentData['guardian_name'],
+                    'guardianContact' => $studentData['guardian_contact'],
+                    'paymentType'    => $studentData['payment_type'],
+                    'reissuance_reason' => $studentData['reissuance_reason'] ?? '',
+                ]);
+
+                if ($response->successful()) {
+                    Log::info('Bridge proxy succeeded');
+                } else {
+                    Log::error('Bridge proxy returned error', [
+                        'status' => $response->status(),
+                        'body' => $response->body()
+                    ]);
+                }
+
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Bridge proxy failed (local save OK)', ['error' => $e->getMessage()]);
+                Log::error('Bridge proxy exception', [
+                    'error' => $e->getMessage(),
+                ]);
             }
-        })->afterResponse();
+        };
+
+        // If in debug mode or for immediate feedback, run synchronously. 
+        // Otherwise use afterResponse for performance.
+        if (config('app.debug')) {
+            $logic();
+        } else {
+            dispatch($logic)->afterResponse();
+        }
     }
 }
