@@ -37,11 +37,13 @@ class ApplicantsController extends Controller
                 'guardianContact' => 'required|digits:11',
                 'id_picture' => [
                     $isReissuance ? 'nullable' : 'required',
-                    'file', 'mimes:jpeg,png,jpg,webp'
+                    'file',
+                    'mimes:jpeg,png,jpg,webp'
                 ],
                 'signature_picture' => [
                     $isReissuance ? 'nullable' : 'required',
-                    'image', 'mimes:jpeg,png,jpg,webp'
+                    'image',
+                    'mimes:jpeg,png,jpg,webp'
                 ],
                 'payment_type' => 'required|string|in:COR,OR',
                 'payment_proof' => 'required|file|mimes:jpeg,png,jpg,webp',
@@ -102,7 +104,7 @@ class ApplicantsController extends Controller
 
             // Update if exists, else create
             $student = Student::updateOrCreate(
-            ['id_number' => $studentData['id_number']],
+                ['id_number' => $studentData['id_number']],
                 $studentData
             );
 
@@ -116,10 +118,91 @@ class ApplicantsController extends Controller
                 'id_number' => $student->id_number,
             ], 201);
 
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Student upload failed', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error saving student', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Store a new applicant record (Employee mode).
+     * Guardian info and course are NOT required for employees.
+     */
+    public function storeEmployee(Request $request)
+    {
+        try {
+            Log::info('New Employee ID Application Request received', [
+                'idNumber' => $request->idNumber,
+                'has_id_picture' => $request->hasFile('id_picture'),
+                'has_signature' => $request->hasFile('signature_picture')
+            ]);
+
+            $idNumber = trim($request->idNumber);
+            $isReissuance = Student::where('id_number', $idNumber)->exists();
+
+            $validated = $request->validate([
+                'idNumber' => 'required|string|max:255',
+                'manual_full_name' => 'required|string|max:255|min:3',
+                'email' => 'required|email|max:255',
+                'address' => 'required|string|min:5',
+                'position' => 'nullable|string|max:255',
+                'department' => 'nullable|string|max:255',
+                'id_picture' => [$isReissuance ? 'nullable' : 'required', 'file', 'mimes:jpeg,png,jpg,webp'],
+                'signature_picture' => [$isReissuance ? 'nullable' : 'required', 'image', 'mimes:jpeg,png,jpg,webp'],
+                'payment_type' => 'required|string',
+                'payment_proof' => 'required|file|mimes:jpeg,png,jpg,webp',
+                'reissuance_reason' => 'nullable|string|max:255',
+            ]);
+
+            $idNumber = strtoupper(trim($validated['idNumber']));
+            $idPath = $request->hasFile('id_picture') ? $request->file('id_picture')->store('students/id_pictures', 'public') : null;
+            $sigPath = $request->hasFile('signature_picture') ? $request->file('signature_picture')->store('students/signatures', 'public') : null;
+            $paymentPath = $request->hasFile('payment_proof') ? $request->file('payment_proof')->store('students/payment_proofs', 'public') : null;
+
+            $nameParts = explode(' ', trim($validated['manual_full_name']));
+            $lastName = array_pop($nameParts);
+            $firstName = implode(' ', $nameParts) ?: $lastName;
+
+            $employeeData = [
+                'id_number' => $idNumber,
+                'first_name' => strtoupper($firstName),
+                'middle_initial' => '',
+                'last_name' => strtoupper($lastName),
+                'manual_full_name' => strtoupper($validated['manual_full_name']),
+                'email' => strtolower($validated['email']),
+                'address' => strtoupper($validated['address']),
+                'guardian_name' => '',
+                'guardian_contact' => '',
+                'payment_type' => strtoupper($validated['payment_type']),
+                'payment_proof' => $paymentPath,
+                'reissuance_reason' => $validated['reissuance_reason'] ?? null,
+                'is_archived' => false,
+                'archived_at' => null,
+                'application_status' => 'pending',
+            ];
+
+            if ($idPath)
+                $employeeData['id_picture'] = $idPath;
+            if ($sigPath)
+                $employeeData['signature_picture'] = $sigPath;
+
+            $student = Student::updateOrCreate(
+                ['id_number' => $employeeData['id_number']],
+                $employeeData
+            );
+
+            broadcast(new ApplicationSubmitted($student))->toOthers();
+
+            $this->proxyToBridgeEmployee($employeeData, $idPath, $sigPath, $paymentPath);
+
+            return response()->json([
+                'message' => 'Employee application submitted successfully!',
+                'id_number' => $student->id_number,
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Employee upload failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error saving employee application', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -223,8 +306,8 @@ class ApplicantsController extends Controller
         $archived = Student::archived()->orderBy('archived_at', 'desc')->get();
         return response()->json($archived);
     }    /**
-     * Helper to proxy data to bridge URL.
-     */
+         * Helper to proxy data to bridge URL.
+         */
     private function proxyToBridge(array $studentData, ?string $idPath, ?string $sigPath, ?string $paymentPath)
     {
         $bridgeUrl = config('services.bridge.url');
@@ -241,14 +324,17 @@ class ApplicantsController extends Controller
 
         // Resolve absolute disk paths once
         $resolvedPaths = [];
-        if ($idPath) $resolvedPaths['id_picture'] = storage_path("app/public/{$idPath}");
-        if ($sigPath) $resolvedPaths['signature_picture'] = storage_path("app/public/{$sigPath}");
-        if ($paymentPath) $resolvedPaths['payment_proof'] = storage_path("app/public/{$paymentPath}");
+        if ($idPath)
+            $resolvedPaths['id_picture'] = storage_path("app/public/{$idPath}");
+        if ($sigPath)
+            $resolvedPaths['signature_picture'] = storage_path("app/public/{$sigPath}");
+        if ($paymentPath)
+            $resolvedPaths['payment_proof'] = storage_path("app/public/{$paymentPath}");
 
         $logic = function () use ($bridgeUrl, $studentData, $resolvedPaths) {
             try {
                 Log::info("Attempting bridge proxy to: {$bridgeUrl}");
-                
+
                 $http = \Illuminate\Support\Facades\Http::timeout(60)
                     ->withHeaders([
                         'ngrok-skip-browser-warning' => 'true',
@@ -263,17 +349,17 @@ class ApplicantsController extends Controller
                 }
 
                 $response = $http->post("{$bridgeUrl}/application-submit", [
-                    'idNumber'       => $studentData['id_number'],
-                    'firstName'      => $studentData['first_name'],
-                    'middleInitial'  => $studentData['middle_initial'],
-                    'lastName'       => $studentData['last_name'],
+                    'idNumber' => $studentData['id_number'],
+                    'firstName' => $studentData['first_name'],
+                    'middleInitial' => $studentData['middle_initial'],
+                    'lastName' => $studentData['last_name'],
                     'manual_full_name' => $studentData['manual_full_name'],
-                    'email'          => $studentData['email'],
-                    'course'         => $studentData['course'] ?? '',
-                    'address'        => $studentData['address'],
-                    'guardianName'   => $studentData['guardian_name'],
+                    'email' => $studentData['email'],
+                    'course' => $studentData['course'] ?? '',
+                    'address' => $studentData['address'],
+                    'guardianName' => $studentData['guardian_name'],
                     'guardianContact' => $studentData['guardian_contact'],
-                    'paymentType'    => $studentData['payment_type'],
+                    'paymentType' => $studentData['payment_type'],
                     'reissuance_reason' => $studentData['reissuance_reason'] ?? '',
                 ]);
 
