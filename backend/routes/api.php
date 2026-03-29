@@ -58,5 +58,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Management
     Route::resource('users', UsersController::class);
 
-    Route::post('/applicants/employee', [ApplicantsController::class, 'storeEmployee']);
+    Route::post('/students/employee', [ApplicantsController::class, 'storeEmployee']);
 });
