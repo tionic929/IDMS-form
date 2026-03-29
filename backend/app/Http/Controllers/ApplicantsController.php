@@ -162,7 +162,7 @@ class ApplicantsController extends Controller
 
             broadcast(new ApplicationSubmitted($student))->toOthers();
 
-            $this->proxyToBridgeEmployee($employeeData, $idPath, $paymentPath);
+            $this->proxyToBridgeEmployee($employeeData, $idPath);
 
             return response()->json([
                 'message' => 'Employee application submitted successfully!',
