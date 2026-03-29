@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Log;
 class ApplicantsController extends Controller
 {
     /**
-     * Store a new applicant record or update an existing one for reissuance.
-     * Used by the public "Submit Details" flow.
+     * Store a new applicant record (Student mode).
+     * Requires full details including guardian info.
      */
     public function store(Request $request)
     {
@@ -35,40 +35,19 @@ class ApplicantsController extends Controller
                 'address' => 'required|string|min:5',
                 'guardianName' => 'required|string|max:255|min:3',
                 'guardianContact' => 'required|digits:11',
-                'id_picture' => [
-                    $isReissuance ? 'nullable' : 'required',
-                    'file',
-                    'mimes:jpeg,png,jpg,webp'
-                ],
-                'signature_picture' => [
-                    $isReissuance ? 'nullable' : 'required',
-                    'image',
-                    'mimes:jpeg,png,jpg,webp'
-                ],
+                'id_picture' => [$isReissuance ? 'nullable' : 'required', 'file', 'mimes:jpeg,png,jpg,webp'],
+                'signature_picture' => [$isReissuance ? 'nullable' : 'required', 'image', 'mimes:jpeg,png,jpg,webp'],
                 'payment_type' => 'required|string|in:COR,OR',
                 'payment_proof' => 'required|file|mimes:jpeg,png,jpg,webp',
                 'reissuance_reason' => 'nullable|string|max:255',
                 'course' => 'nullable|string|max:255',
             ]);
 
-            $idNumber = trim($validated['idNumber']);
+            $idNumber = strtoupper(trim($validated['idNumber']));
+            $idPath = $request->hasFile('id_picture') ? $request->file('id_picture')->store('students/id_pictures', 'public') : null;
+            $sigPath = $request->hasFile('signature_picture') ? $request->file('signature_picture')->store('students/signatures', 'public') : null;
+            $paymentPath = $request->hasFile('payment_proof') ? $request->file('payment_proof')->store('students/payment_proofs', 'public') : null;
 
-            $idPath = null;
-            if ($request->hasFile('id_picture')) {
-                $idPath = $request->file('id_picture')->store('students/id_pictures', 'public');
-            }
-
-            $sigPath = null;
-            if ($request->hasFile('signature_picture')) {
-                $sigPath = $request->file('signature_picture')->store('students/signatures', 'public');
-            }
-
-            $paymentPath = null;
-            if ($request->hasFile('payment_proof')) {
-                $paymentPath = $request->file('payment_proof')->store('students/payment_proofs', 'public');
-            }
-
-            // Provide fallback structured names based on full name
             $nameParts = explode(' ', trim($validated['manual_full_name']));
             $lastName = array_pop($nameParts);
             $firstName = implode(' ', $nameParts);
@@ -77,9 +56,8 @@ class ApplicantsController extends Controller
                 $lastName = '';
             }
 
-            // Build the full student data with manual applicant names
             $studentData = [
-                'id_number' => strtoupper($idNumber),
+                'id_number' => $idNumber,
                 'first_name' => strtoupper($firstName),
                 'middle_initial' => '',
                 'last_name' => strtoupper($lastName),
@@ -102,7 +80,6 @@ class ApplicantsController extends Controller
             if ($sigPath)
                 $studentData['signature_picture'] = $sigPath;
 
-            // Update if exists, else create
             $student = Student::updateOrCreate(
                 ['id_number' => $studentData['id_number']],
                 $studentData
@@ -110,7 +87,6 @@ class ApplicantsController extends Controller
 
             broadcast(new ApplicationSubmitted($student))->toOthers();
 
-            // Bridge proxy — pass saved paths so dispatch closure can read files cleanly
             $this->proxyToBridge($studentData, $idPath, $sigPath, $paymentPath);
 
             return response()->json([
@@ -126,7 +102,7 @@ class ApplicantsController extends Controller
 
     /**
      * Store a new applicant record (Employee mode).
-     * Guardian info and course are NOT required for employees.
+     * Guardian info is not required — employees don't have guardians.
      */
     public function storeEmployee(Request $request)
     {
@@ -222,8 +198,6 @@ class ApplicantsController extends Controller
                     'guardianName' => $student->guardian_name,
                     'guardianContact' => $student->guardian_contact,
                     'course' => $student->course,
-                    // Note: Sensitive files are not pre-filled for security, 
-                    // but paths are kept to avoid re-upload if not changed (handled in frontend).
                 ]
             ]);
         }
@@ -232,7 +206,7 @@ class ApplicantsController extends Controller
     }
 
     /**
-     * Send OTP email via Google SMTP
+     * Send OTP email via Google SMTP.
      */
     public function sendOtp(Request $request)
     {
@@ -272,7 +246,7 @@ class ApplicantsController extends Controller
     }
 
     /**
-     * Permanently delete an applicant record.
+     * Permanently delete an applicant record (archived only).
      */
     public function destroy($id)
     {
@@ -301,10 +275,78 @@ class ApplicantsController extends Controller
     {
         $archived = Student::archived()->orderBy('archived_at', 'desc')->get();
         return response()->json($archived);
-    }    /**
-         * Helper to proxy data to bridge URL.
-         */
+    }
+
+    // -------------------------------------------------------------------------
+    // PRIVATE BRIDGE HELPERS
+    // -------------------------------------------------------------------------
+
+    /**
+     * Proxy a STUDENT application to the bridge.
+     * Sends full payload: guardian name, guardian contact, course.
+     */
     private function proxyToBridge(array $studentData, ?string $idPath, ?string $sigPath, ?string $paymentPath)
+    {
+        $payload = [
+            'idNumber' => $studentData['id_number'],
+            'firstName' => $studentData['first_name'],
+            'middleInitial' => $studentData['middle_initial'],
+            'lastName' => $studentData['last_name'],
+            'manual_full_name' => $studentData['manual_full_name'],
+            'email' => $studentData['email'],
+            'course' => $studentData['course'] ?? '',
+            'address' => $studentData['address'],
+            'guardianName' => $studentData['guardian_name'],
+            'guardianContact' => $studentData['guardian_contact'],
+            'paymentType' => $studentData['payment_type'],
+            'reissuance_reason' => $studentData['reissuance_reason'] ?? '',
+        ];
+
+        $this->dispatchBridgeRequest('application-submit', $payload, $idPath, $sigPath, $paymentPath);
+    }
+
+    /**
+     * Proxy an EMPLOYEE application to the bridge.
+     * Excludes guardian info — not relevant for employees.
+     */
+    private function proxyToBridgeEmployee(array $employeeData, ?string $idPath, ?string $paymentPath)
+    {
+        $payload = [
+            'idNumber' => $employeeData['id_number'],
+            'firstName' => $employeeData['first_name'],
+            'middleInitial' => $employeeData['middle_initial'],
+            'lastName' => $employeeData['last_name'],
+            'manual_full_name' => $employeeData['manual_full_name'],
+            'email' => $employeeData['email'],
+            'address' => $employeeData['address'],
+            'paymentType' => $employeeData['payment_type'],
+            'reissuance_reason' => $employeeData['reissuance_reason'] ?? '',
+        ];
+
+        // No sigPath for employees — pass null in its place
+        $this->dispatchBridgeRequest('employee-application-submit', $payload, $idPath, null, $paymentPath);
+    }
+
+    /**
+     * Resolve storage paths to absolute disk paths for file attachment.
+     */
+    private function resolveFilePaths(?string $idPath, ?string $sigPath, ?string $paymentPath): array
+    {
+        $resolved = [];
+        if ($idPath)
+            $resolved['id_picture'] = storage_path("app/public/{$idPath}");
+        if ($sigPath)
+            $resolved['signature_picture'] = storage_path("app/public/{$sigPath}");
+        if ($paymentPath)
+            $resolved['payment_proof'] = storage_path("app/public/{$paymentPath}");
+        return $resolved;
+    }
+
+    /**
+     * Build and fire the HTTP request to the bridge.
+     * Runs synchronously in debug mode, afterResponse in production.
+     */
+    private function dispatchBridgeRequest(string $route, array $payload, ?string $idPath, ?string $sigPath, ?string $paymentPath)
     {
         $bridgeUrl = config('services.bridge.url');
         if (!$bridgeUrl) {
@@ -312,71 +354,49 @@ class ApplicantsController extends Controller
             return;
         }
 
-        // Check if the request already came from the bridge to prevent infinite loops
         if (request()->header('X-Bridge-Source') === 'true') {
             Log::info('Bridge proxy skipped: Request originated from bridge');
             return;
         }
 
-        // Resolve absolute disk paths once
-        $resolvedPaths = [];
-        if ($idPath)
-            $resolvedPaths['id_picture'] = storage_path("app/public/{$idPath}");
-        if ($sigPath)
-            $resolvedPaths['signature_picture'] = storage_path("app/public/{$sigPath}");
-        if ($paymentPath)
-            $resolvedPaths['payment_proof'] = storage_path("app/public/{$paymentPath}");
+        $resolvedPaths = $this->resolveFilePaths($idPath, $sigPath, $paymentPath);
+        $endpoint = "{$bridgeUrl}/{$route}";
 
-        $logic = function () use ($bridgeUrl, $studentData, $resolvedPaths) {
+        $logic = function () use ($endpoint, $payload, $resolvedPaths) {
             try {
-                Log::info("Attempting bridge proxy to: {$bridgeUrl}");
+                Log::info("Attempting bridge proxy to: {$endpoint}");
 
                 $http = \Illuminate\Support\Facades\Http::timeout(60)
                     ->withHeaders([
                         'ngrok-skip-browser-warning' => 'true',
-                        'Accept' => 'application/json'
+                        'Accept' => 'application/json',
                     ]);
 
-                // Attach files by reading from disk
                 foreach ($resolvedPaths as $field => $absolutePath) {
                     if (file_exists($absolutePath)) {
                         $http = $http->attach($field, file_get_contents($absolutePath), basename($absolutePath));
                     }
                 }
 
-                $response = $http->post("{$bridgeUrl}/application-submit", [
-                    'idNumber' => $studentData['id_number'],
-                    'firstName' => $studentData['first_name'],
-                    'middleInitial' => $studentData['middle_initial'],
-                    'lastName' => $studentData['last_name'],
-                    'manual_full_name' => $studentData['manual_full_name'],
-                    'email' => $studentData['email'],
-                    'course' => $studentData['course'] ?? '',
-                    'address' => $studentData['address'],
-                    'guardianName' => $studentData['guardian_name'],
-                    'guardianContact' => $studentData['guardian_contact'],
-                    'paymentType' => $studentData['payment_type'],
-                    'reissuance_reason' => $studentData['reissuance_reason'] ?? '',
-                ]);
+                $response = $http->post($endpoint, $payload);
 
                 if ($response->successful()) {
-                    Log::info('Bridge proxy succeeded');
+                    Log::info('Bridge proxy succeeded', ['endpoint' => $endpoint]);
                 } else {
                     Log::error('Bridge proxy returned error', [
+                        'endpoint' => $endpoint,
                         'status' => $response->status(),
-                        'body' => $response->body()
+                        'body' => $response->body(),
                     ]);
                 }
-
             } catch (\Exception $e) {
                 Log::error('Bridge proxy exception', [
+                    'endpoint' => $endpoint,
                     'error' => $e->getMessage(),
                 ]);
             }
         };
 
-        // If in debug mode or for immediate feedback, run synchronously. 
-        // Otherwise use afterResponse for performance.
         if (config('app.debug')) {
             $logic();
         } else {
