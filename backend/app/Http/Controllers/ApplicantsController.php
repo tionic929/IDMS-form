@@ -122,14 +122,13 @@ class ApplicantsController extends Controller
                 'address' => 'required|string|min:5',
                 'department' => 'nullable|string|max:255',
                 'id_picture' => [$isReissuance ? 'nullable' : 'required', 'file', 'mimes:jpeg,png,jpg,webp'],
-                'payment_type' => 'required|string',
-                'payment_proof' => 'required|file|mimes:jpeg,png,jpg,webp',
+                'payment_type' => 'nullable|string',
+                'payment_proof' => 'nullable|file|mimes:jpeg,png,jpg,webp',
                 'reissuance_reason' => 'nullable|string|max:255',
             ]);
 
             $idNumber = strtoupper(trim($validated['idNumber']));
             $idPath = $request->hasFile('id_picture') ? $request->file('id_picture')->store('students/id_pictures', 'public') : null;
-            $paymentPath = $request->hasFile('payment_proof') ? $request->file('payment_proof')->store('students/payment_proofs', 'public') : null;
 
             $nameParts = explode(' ', trim($validated['manual_full_name']));
             $lastName = array_pop($nameParts);
@@ -147,8 +146,6 @@ class ApplicantsController extends Controller
                 'course' => 'EMPLOYEE',
                 'guardian_name' => '',
                 'guardian_contact' => '',
-                'payment_type' => strtoupper($validated['payment_type']),
-                'payment_proof' => $paymentPath,
                 'reissuance_reason' => $validated['reissuance_reason'] ?? null,
                 'is_archived' => false,
                 'archived_at' => null,
@@ -321,7 +318,6 @@ class ApplicantsController extends Controller
             'course' => 'EMPLOYEE',
             'department' => $employeeData['department'] ?? '',
             'address' => $employeeData['address'],
-            'paymentType' => $employeeData['payment_type'],
             'reissuance_reason' => $employeeData['reissuance_reason'] ?? '',
         ];
 
