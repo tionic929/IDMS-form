@@ -12,15 +12,15 @@ use App\Http\Controllers\AnalyticsController;
 /* |-------------------------------------------------------------------------- | API Routes |-------------------------------------------------------------------------- */
 
 // Public / Auth Routes
-Route::post('/login', [AuthController::class , 'login'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 // Public ID Application Submission (5 requests/min per IP)
-Route::post('/students', [ApplicantsController::class , 'store'])->middleware('throttle:5,1')->name('applicants.store');
+Route::post('/students', [ApplicantsController::class, 'store'])->middleware('throttle:5,1')->name('applicants.store');
 
 use App\Http\Controllers\ApplicationStatusController;
 
 // Public Verification & Checking
-Route::post('/reports/verify', [ReportsController::class , 'verifyIdNumber'])->middleware('throttle:10,1');
+Route::post('/reports/verify', [ReportsController::class, 'verifyIdNumber'])->middleware('throttle:10,1');
 Route::post('/students/check-existing', [ApplicantsController::class, 'checkExistingRecord']);
 Route::post('/send-otp', [ApplicantsController::class, 'sendOtp'])->middleware('throttle:5,1');
 
@@ -33,26 +33,30 @@ Route::post('/applications/{id_number}/reject', [ApplicationStatusController::cl
 Route::middleware('auth:sanctum')->group(function () {
 
     // User Context
-    Route::get('/user', function (Request $request) {
+    Route::get(
+        '/user',
+        function (Request $request) {
             return $request->user();
         }
-        );
+    );
 
-        Route::post('/logout', [AuthController::class , 'logout']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-        // Admin Analytics & Dashboard
-        Route::get('/analytics/dashboard', [AnalyticsController::class , 'getDashboardStats']);
-        Route::get('/get-departments', [DepartmentsController::class , 'getApplicantsByDepartments']);
+    // Admin Analytics & Dashboard
+    Route::get('/analytics/dashboard', [AnalyticsController::class, 'getDashboardStats']);
+    Route::get('/get-departments', [DepartmentsController::class, 'getApplicantsByDepartments']);
 
-        // Report Management
-        Route::post('/import', [ReportsController::class , 'import']);
-        Route::get('/all-imported-reports', [ReportsController::class , 'getImportedReports']);
+    // Report Management
+    Route::post('/import', [ReportsController::class, 'import']);
+    Route::get('/all-imported-reports', [ReportsController::class, 'getImportedReports']);
 
-        // Student Management
-        Route::get('/students/archived', [ApplicantsController::class, 'getArchived']);
-        Route::post('/students/{id}/archive', [ApplicantsController::class, 'archive']);
-        Route::delete('/students/{id}/permanent', [ApplicantsController::class, 'destroy']);
+    // Student Management
+    Route::get('/students/archived', [ApplicantsController::class, 'getArchived']);
+    Route::post('/students/{id}/archive', [ApplicantsController::class, 'archive']);
+    Route::delete('/students/{id}/permanent', [ApplicantsController::class, 'destroy']);
 
-        // User Management
-        Route::resource('users', UsersController::class);
-    });
+    // User Management
+    Route::resource('users', UsersController::class);
+
+    Route::post('/applicants/employee', [ApplicantsController::class, 'storeEmployee']);
+});

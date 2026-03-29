@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { submitApplication, submitEmployeeApplication } from '../../api/students';
+
 import { useNavigate } from 'react-router-dom';
 import api from '@/api/axios';
 import type {
@@ -174,6 +176,14 @@ export function useSubmitForm() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [applicationType, form.reissuance_reason, userType]);
 
+    // ── Clear LRN if not applicable ──────────────────────────────────────────
+    useEffect(() => {
+        const isLrnRequired = !['College', 'Masteral', 'Doctoral'].includes(form.schoolLevel);
+        if (!isLrnRequired && form.lrn !== '') {
+            updateForm({ lrn: '' });
+        }
+    }, [form.schoolLevel, updateForm]);
+
     // ── Status polling ─────────────────────────────────────────────────────────
     useEffect(() => {
         if (applicationStatus !== 'pending') return;
@@ -193,6 +203,7 @@ export function useSubmitForm() {
 
     // ── Derived flags ──────────────────────────────────────────────────────────
     const isReissuance = isSecondIssuance || applicationType === 'OLD';
+    const isEmployee = userType === 'EMPLOYEE';
 
     // ── Validation per-step ────────────────────────────────────────────────────
     const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -208,7 +219,9 @@ export function useSubmitForm() {
         if (userType === 'STUDENT') {
             const guardian = form.guardianName.trim().length >= 3 && /^\d{11}$/.test(form.guardianContact);
             if (applicationType === 'NEW') {
-                return guardian && form.lrn.trim().length >= 6 && form.course !== '';
+                const isLrnRequired = !['College', 'Masteral', 'Doctoral'].includes(form.schoolLevel);
+                const lrnOk = isLrnRequired ? form.lrn.trim().length >= 6 : true;
+                return guardian && lrnOk && form.course !== '';
             }
             const hasReason = form.reissuance_reason !== '';
             const courseOk = form.reissuance_reason === 'Department Shift' ? form.course !== '' : true;
@@ -226,7 +239,7 @@ export function useSubmitForm() {
     })();
 
     const isStep6Valid = applicationType === 'NEW'
-        ? userType === 'EMPLOYEE'
+        ? isEmployee
             ? form.id_picture !== null && form.payment_proof !== null
             : form.id_picture !== null && form.signature_picture !== null && form.payment_proof !== null
         : true;
@@ -234,13 +247,12 @@ export function useSubmitForm() {
     const stepCanProgress = (step: number): boolean => {
         switch (step) {
             case 0: return hasGivenConsent;
-            case 1: return userType === 'EMPLOYEE' ? true : (userType === 'STUDENT' && form.schoolLevel !== '');
+            case 1: return isEmployee ? true : (userType === 'STUDENT' && form.schoolLevel !== '');
             case 2: return applicationType !== null;
             case 3: return isStep3Valid;
             case 4: return isStep4Valid;
             case 5: return isStep5Valid;
             case 6: return isStep6Valid;
-            // Step 7 is review/submit — same media requirements apply
             case 7: return isStep6Valid;
             default: return false;
         }
@@ -283,8 +295,8 @@ export function useSubmitForm() {
 
     /**
      * Only called on the FINAL step (step 7). Navigation is handled by goNext.
-     * This prevents the accidental form submission bug when pressing Enter on
-     * earlier steps — those steps now call goNext explicitly, not submit.
+     * Routes to /students/employee for EMPLOYEE users, /students for STUDENT users.
+     * Guardian fields are intentionally excluded from the employee FormData payload.
      */
     const handleSubmit = useCallback(async () => {
         if (!isStep6Valid) return;
@@ -301,10 +313,31 @@ export function useSubmitForm() {
         setIsSubmitting(true);
         try {
             const formData = new FormData();
-            Object.entries(form).forEach(([key, value]) => {
-                if (value !== null) formData.append(key, value as string | Blob);
-            });
-            await api.post('/students', formData);
+
+            if (isEmployee) {
+                // Employee payload — guardian fields are irrelevant, omit them
+                const employeeFields: (keyof FormState)[] = [
+                    'idNumber', 'manual_full_name', 'email', 'address',
+                    'department', 'contactInfo', 'id_picture', 'signature_picture',
+                    'payment_type', 'payment_proof', 'reissuance_reason',
+                ];
+                employeeFields.forEach(key => {
+                    const value = form[key];
+                    if (value !== null && value !== undefined) {
+                        formData.append(key, value as string | Blob);
+                    }
+                });
+                await submitEmployeeApplication(formData);
+            } else {
+                // Student payload — include all fields
+                Object.entries(form).forEach(([key, value]) => {
+                    if (value !== null && value !== undefined) {
+                        formData.append(key, value as string | Blob);
+                    }
+                });
+                await submitApplication(formData);
+            }
+
             setApplicationStatus('pending');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
@@ -312,7 +345,7 @@ export function useSubmitForm() {
         } finally {
             setIsSubmitting(false);
         }
-    }, [form, isReissuance, isStep6Valid]);
+    }, [form, isEmployee, isReissuance, isStep6Valid]);
 
     const handleSwitchToReplacement = useCallback(() => {
         setShowExistingRecordModal(false);
@@ -337,7 +370,7 @@ export function useSubmitForm() {
         // User & app type
         userType, setUserType,
         applicationType, setApplicationType,
-        isReissuance,
+        isReissuance, isEmployee,
 
         // Form
         form, updateForm, setForm,

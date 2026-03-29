@@ -22,7 +22,7 @@ export const Step0Consent = ({ hasGivenConsent, onChange }: Step0ConsentProps) =
                 {/* Policy text */}
                 <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-sm text-slate-600 leading-relaxed space-y-4 shadow-inner">
                     <p>
-                        Welcome to the Northeastern College ID Application System. By proceeding, you agree to our{' '}
+                        Welcome to the Northeastern College ID Application System. <br />By proceeding, you agree to our{' '}
                         <a
                             href="/terms-and-conditions"
                             target="_blank"

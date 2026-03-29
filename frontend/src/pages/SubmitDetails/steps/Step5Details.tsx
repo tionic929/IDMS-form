@@ -85,8 +85,8 @@ export const Step5Details = ({
                                 </AnimatePresence>
                             )}
 
-                            {/* LRN (NEW only) */}
-                            {isNew && (
+                            {/* LRN (NEW only; skip for College/Masteral/Doctoral) */}
+                            {isNew && !['College', 'Masteral', 'Doctoral'].includes(form.schoolLevel) && (
                                 <FloatingLabelInput
                                     label="LRN (Learner Reference Number)"
                                     value={form.lrn}
