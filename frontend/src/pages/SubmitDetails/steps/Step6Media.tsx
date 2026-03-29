@@ -29,7 +29,7 @@ export const Step6Media = ({
     idPreview, sigPreview, paymentPreview,
     sigType, onSigTypeChange, onOpenSigPad, onIdFileChange,
 }: Step6MediaProps) => {
-    const showPayment = userType === 'STUDENT' || (userType === 'EMPLOYEE' && applicationType === 'NEW');
+    const showPayment = userType === 'STUDENT';
     const paymentLabel = userType === 'EMPLOYEE'
         ? 'HR Form'
         : form.payment_type === 'COR'
@@ -42,8 +42,8 @@ export const Step6Media = ({
 
             {isReissuance && (
                 <InfoBanner icon={<Info size={15} className="text-blue-500" />} variant="blue">
-                    Replacement ID: portrait photo and signature are optional if unchanged.
-                    Payment proof is still required.
+                    Replacement ID: portrait photo {userType === 'STUDENT' && 'and signature'} are optional if unchanged.
+                    {userType === 'STUDENT' && ' Payment proof is still required.'}
                 </InfoBanner>
             )}
 

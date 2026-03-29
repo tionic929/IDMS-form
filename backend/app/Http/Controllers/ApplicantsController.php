@@ -306,7 +306,7 @@ class ApplicantsController extends Controller
      * Proxy an EMPLOYEE application to the bridge.
      * Excludes guardian info — not relevant for employees.
      */
-    private function proxyToBridgeEmployee(array $employeeData, ?string $idPath, ?string $paymentPath)
+    private function proxyToBridgeEmployee(array $employeeData, ?string $idPath)
     {
         $payload = [
             'idNumber' => $employeeData['id_number'],
@@ -321,8 +321,8 @@ class ApplicantsController extends Controller
             'reissuance_reason' => $employeeData['reissuance_reason'] ?? '',
         ];
 
-        // No sigPath for employees — pass null in its place
-        $this->dispatchBridgeRequest('employee-application-submit', $payload, $idPath, null, $paymentPath);
+        // No sigPath and No paymentPath for employees — pass null
+        $this->dispatchBridgeRequest('employee-application-submit', $payload, $idPath, null, null);
     }
 
     /**

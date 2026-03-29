@@ -240,7 +240,7 @@ export function useSubmitForm() {
 
     const isStep6Valid = applicationType === 'NEW'
         ? isEmployee
-            ? form.id_picture !== null && form.payment_proof !== null
+            ? form.id_picture !== null
             : form.id_picture !== null && form.signature_picture !== null && form.payment_proof !== null
         : true;
 
@@ -318,8 +318,7 @@ export function useSubmitForm() {
                 // Employee payload — guardian fields are irrelevant, omit them
                 const employeeFields: (keyof FormState)[] = [
                     'idNumber', 'manual_full_name', 'email', 'address',
-                    'department', 'contactInfo', 'id_picture', 'signature_picture',
-                    'payment_type', 'payment_proof', 'reissuance_reason',
+                    'department', 'contactInfo', 'id_picture', 'reissuance_reason',
                 ];
                 employeeFields.forEach(key => {
                     const value = form[key];

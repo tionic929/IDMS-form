@@ -74,7 +74,7 @@ export const Step7Review = ({
                         {form.reissuance_reason && (
                             <ReviewRow label="Replacement Reason" value={form.reissuance_reason} />
                         )}
-                        <ReviewRow label="Payment Type" value={form.payment_type || '—'} />
+                        {userType === 'STUDENT' && <ReviewRow label="Payment Type" value={form.payment_type || '—'} />}
                     </div>
 
                     {/* Uploads */}
@@ -103,12 +103,14 @@ export const Step7Review = ({
                             </div>
                         )}
 
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">{paymentLabel}</span>
-                            {paymentUploaded
-                                ? <CheckCircle2 className="text-emerald-500 h-5 w-5" />
-                                : <AlertCircle className="text-red-500 h-5 w-5" />}
-                        </div>
+                        {userType === 'STUDENT' && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">{paymentLabel}</span>
+                                {paymentUploaded
+                                    ? <CheckCircle2 className="text-emerald-500 h-5 w-5" />
+                                    : <AlertCircle className="text-red-500 h-5 w-5" />}
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
