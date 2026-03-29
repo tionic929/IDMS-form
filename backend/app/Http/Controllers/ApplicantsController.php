@@ -134,7 +134,6 @@ class ApplicantsController extends Controller
             Log::info('New Employee ID Application Request received', [
                 'idNumber' => $request->idNumber,
                 'has_id_picture' => $request->hasFile('id_picture'),
-                'has_signature' => $request->hasFile('signature_picture')
             ]);
 
             $idNumber = trim($request->idNumber);
@@ -148,7 +147,6 @@ class ApplicantsController extends Controller
                 'position' => 'nullable|string|max:255',
                 'department' => 'nullable|string|max:255',
                 'id_picture' => [$isReissuance ? 'nullable' : 'required', 'file', 'mimes:jpeg,png,jpg,webp'],
-                'signature_picture' => [$isReissuance ? 'nullable' : 'required', 'image', 'mimes:jpeg,png,jpg,webp'],
                 'payment_type' => 'required|string',
                 'payment_proof' => 'required|file|mimes:jpeg,png,jpg,webp',
                 'reissuance_reason' => 'nullable|string|max:255',
@@ -156,7 +154,6 @@ class ApplicantsController extends Controller
 
             $idNumber = strtoupper(trim($validated['idNumber']));
             $idPath = $request->hasFile('id_picture') ? $request->file('id_picture')->store('students/id_pictures', 'public') : null;
-            $sigPath = $request->hasFile('signature_picture') ? $request->file('signature_picture')->store('students/signatures', 'public') : null;
             $paymentPath = $request->hasFile('payment_proof') ? $request->file('payment_proof')->store('students/payment_proofs', 'public') : null;
 
             $nameParts = explode(' ', trim($validated['manual_full_name']));
@@ -183,8 +180,6 @@ class ApplicantsController extends Controller
 
             if ($idPath)
                 $employeeData['id_picture'] = $idPath;
-            if ($sigPath)
-                $employeeData['signature_picture'] = $sigPath;
 
             $student = Student::updateOrCreate(
                 ['id_number' => $employeeData['id_number']],
@@ -193,7 +188,7 @@ class ApplicantsController extends Controller
 
             broadcast(new ApplicationSubmitted($student))->toOthers();
 
-            $this->proxyToBridgeEmployee($employeeData, $idPath, $sigPath, $paymentPath);
+            $this->proxyToBridgeEmployee($employeeData, $idPath, $paymentPath);
 
             return response()->json([
                 'message' => 'Employee application submitted successfully!',
