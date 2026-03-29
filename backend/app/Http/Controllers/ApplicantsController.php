@@ -169,6 +169,8 @@ class ApplicantsController extends Controller
                 'email' => strtolower($validated['email']),
                 'address' => strtoupper($validated['address']),
                 'course' => 'EMPLOYEE',
+                'guardian_name' => '',
+                'guardian_contact' => '',
                 'payment_type' => strtoupper($validated['payment_type']),
                 'payment_proof' => $paymentPath,
                 'reissuance_reason' => $validated['reissuance_reason'] ?? null,
