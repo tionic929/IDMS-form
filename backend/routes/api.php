@@ -16,6 +16,7 @@ Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 // Public ID Application Submission (5 requests/min per IP)
 Route::post('/students', [ApplicantsController::class, 'store'])->middleware('throttle:5,1')->name('applicants.store');
+Route::post('/students/employee', [ApplicantsController::class, 'storeEmployee'])->middleware('throttle:5,1')->name('applicants.storeEmployee');
 
 use App\Http\Controllers\ApplicationStatusController;
 
@@ -58,5 +59,4 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Management
     Route::resource('users', UsersController::class);
 
-    Route::post('/students/employee', [ApplicantsController::class, 'storeEmployee']);
 });
