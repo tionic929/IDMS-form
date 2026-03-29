@@ -120,7 +120,6 @@ class ApplicantsController extends Controller
                 'manual_full_name' => 'required|string|max:255|min:3',
                 'email' => 'required|email|max:255',
                 'address' => 'required|string|min:5',
-                'position' => 'nullable|string|max:255',
                 'department' => 'nullable|string|max:255',
                 'id_picture' => [$isReissuance ? 'nullable' : 'required', 'file', 'mimes:jpeg,png,jpg,webp'],
                 'payment_type' => 'required|string',
