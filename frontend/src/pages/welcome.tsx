@@ -135,7 +135,13 @@ const Welcome: React.FC = () => {
             </button>
           </div>
           <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase text-center md:text-right">
-            Build 0.6b © {new Date().getFullYear()} Northeastern College · Developed by <br /><span className="text-foreground">Sherwin Adonis Vizcarra - II</span>
+            Build 0.7A © {new Date().getFullYear()} Northeastern College · Developed by <br />
+            <span
+              onClick={() => navigate('/about')}
+              className="text-foreground hover:text-primary cursor-pointer transition-colors"
+            >
+              NC BSIT 4B - ID TECH
+            </span>
           </p>
         </div>
       </footer>

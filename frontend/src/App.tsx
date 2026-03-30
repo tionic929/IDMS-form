@@ -22,6 +22,7 @@ const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Settings = lazy(() => import("./pages/Admin/Settings/Settings"));
 const History = lazy(() => import("./pages/Admin/History/History"));
+const About = lazy(() => import("./pages/About"));
 
 
 // Simple loading fallback for lazy components
@@ -76,6 +77,7 @@ function App() {
               <Route path="/how-to-submit" element={<Instructions />} />
               <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/about" element={<About />} />
 
               <Route
                 path="/login"
