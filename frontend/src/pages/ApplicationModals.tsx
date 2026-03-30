@@ -230,9 +230,17 @@ export default function ApplicationModals({
         </DialogContent>
       </Dialog>
       {/* ── Pending Notification Modal ── */}
-      <Dialog open={applicationStatus === 'pending'}>
-        <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-2xl border-none shadow-2xl z-[100] [&>button]:hidden">
-          <div className="bg-amber-500 p-8 flex flex-col items-center justify-center text-white">
+      <Dialog open={applicationStatus === 'pending'} onOpenChange={onGoHome}>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-white rounded-2xl border-none shadow-2xl z-[100]">
+          <div className="bg-amber-500 p-8 flex flex-col items-center justify-center text-white relative">
+            <Button 
+               variant="ghost" 
+               size="icon" 
+               className="absolute top-4 right-4 text-white hover:bg-amber-600 hover:text-white rounded-full"
+               onClick={onGoHome}
+            >
+              <XCircle className="h-6 w-6" />
+            </Button>
             <Clock className="h-16 w-16 mb-4 animate-pulse opacity-90" />
             <h2 className="text-2xl font-black uppercase tracking-tight text-center">Under Review</h2>
             <p className="text-amber-100 mt-2 text-center text-sm font-medium">Your application is in queue</p>
