@@ -4,10 +4,10 @@ import { ChevronLeft, Github, Linkedin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // Import avatars
-import sherwinImg from '@/assets/team/sherwin_portrait_1774837846862.png';
-import darrenImg from '@/assets/team/darren_portrait_1774837893433.png';
-import alyssaImg from '@/assets/team/alyssa_portrait_1774837933135.png';
-import philipImg from '@/assets/team/philip_portrait_1774837953515.png';
+import sherwinImg from '@/assets/team/sherwin.jpg';
+import darrenImg from '@/assets/team/darren.jpg';
+import alyssaImg from '@/assets/team/aly.png';
+import philipImg from '@/assets/team/philip.jpg';
 import ncLogo from '@/assets/nc_logo.png';
 
 const TEAM_MEMBERS = [
@@ -56,14 +56,14 @@ export default function About() {
 
             <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
                 <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-                    <motion.h2 
+                    <motion.h2
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="text-4xl md:text-5xl font-black text-[#001f3f] tracking-tight"
                     >
                         Meet the Creators
                     </motion.h2>
-                    <motion.p 
+                    <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
@@ -83,9 +83,9 @@ export default function About() {
                             className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:shadow-[#001f3f]/10 transition-all duration-300 group flex flex-col h-full"
                         >
                             <div className="relative mb-6 rounded-2xl overflow-hidden aspect-square border-4 border-slate-50">
-                                <img 
-                                    src={member.image} 
-                                    alt={member.name} 
+                                <img
+                                    src={member.image}
+                                    alt={member.name}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -96,7 +96,7 @@ export default function About() {
                                 <p className="text-sm text-slate-500 leading-relaxed flex-1">
                                     {member.description}
                                 </p>
-                                
+
                                 <div className="flex items-center gap-3 mt-6 pt-6 border-t border-slate-100">
                                     <button className="h-8 w-8 rounded-full bg-slate-50 hover:bg-[#001f3f] hover:text-white text-slate-400 flex items-center justify-center transition-colors">
                                         <Github className="h-4 w-4" />
@@ -109,8 +109,8 @@ export default function About() {
                         </motion.div>
                     ))}
                 </div>
-                
-                <motion.div 
+
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}

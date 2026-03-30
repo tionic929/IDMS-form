@@ -133,9 +133,15 @@ const Welcome: React.FC = () => {
             >
               Terms & Conditions
             </button>
+            <button
+              onClick={() => navigate('/about')}
+              className="text-[10px] font-black text-muted-foreground tracking-[0.2em] uppercase hover:text-primary transition-colors"
+            >
+              About Us
+            </button>
           </div>
           <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase text-center md:text-right">
-            Build 0.7A © {new Date().getFullYear()} Northeastern College · Developed by <br />
+            Build 0.8a © {new Date().getFullYear()} Northeastern College · Developed by <br />
             <span
               onClick={() => navigate('/about')}
               className="text-foreground hover:text-primary cursor-pointer transition-colors"

@@ -86,7 +86,7 @@ export const Step5Details = ({
                             )}
 
                             {/* LRN (NEW only; skip for College/Masteral/Doctoral) */}
-                            {isNew && !['College', 'Masteral', 'Doctoral'].includes(form.schoolLevel) && (
+                            {isNew && !['College', 'Masteral/Doctoral'].includes(form.schoolLevel) && (
                                 <FloatingLabelInput
                                     label="LRN (Learner Reference Number)"
                                     value={form.lrn}
