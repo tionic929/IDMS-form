@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Github, Linkedin } from 'lucide-react';
+import { ChevronLeft, Github, Linkedin, Facebook, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // Import avatars
-import sherwinImg from '@/assets/team/sherwin.jpg';
-import darrenImg from '@/assets/team/darren.jpg';
+import sherwinImg from '@/assets/team/sherwin.png';
+import darrenImg from '@/assets/team/darren.png';
 import alyssaImg from '@/assets/team/aly.png';
 import philipImg from '@/assets/team/philip.jpg';
 import ncLogo from '@/assets/nc_logo.png';
@@ -13,35 +13,56 @@ import ncLogo from '@/assets/nc_logo.png';
 const TEAM_MEMBERS = [
     {
         name: 'Sherwin Adonis Vizcarra - II',
-        role: 'Lead Developer & Architect',
+        role: 'Lead Developer',
         image: sherwinImg,
-        description: 'Passionate about building scalable systems and crafting beautiful user interfaces.',
+        description: 'System design & architecture, full-stack development, and scalable solutions.',
+        links: [
+            { icon: Github, href: 'https://github.com/tionic929' },
+            { icon: Linkedin, href: 'https://www.linkedin.com/in/sherwin-adonis-vizcarra/' },
+            { icon: Facebook, href: 'https://www.facebook.com/tionlc' },
+            { icon: Instagram, href: 'https://www.instagram.com/tionlc/' },
+        ]
     },
     {
         name: 'John Darren C. Del Castillo',
-        role: 'Backend Developer',
+        role: 'Project Manager',
         image: darrenImg,
-        description: 'Specializes in robust backend architectures and API integrations.',
+        description: 'Overseeing project lifecycle, timeline management, and team coordination.',
+        links: [
+            { icon: Github, href: '#' },
+            { icon: Linkedin, href: '#' },
+            { icon: Facebook, href: '#' },
+            { icon: Instagram, href: '#' },
+        ]
     },
     {
         name: 'Ma. Alyssa B. Abad',
-        role: 'UI/UX Designer',
+        role: 'QA / Researcher',
         image: alyssaImg,
-        description: 'Focused on delivering intuitive user experiences and modern design aesthetics.',
+        description: 'Ensuring system reliability through rigorous testing and data-driven research.',
+        links: [
+            { icon: Github, href: '#' },
+            { icon: Linkedin, href: '#' },
+        ]
     },
     {
         name: 'Philip Joshua P. Tuliao',
-        role: 'Frontend Developer',
+        role: 'Documenter',
         image: philipImg,
-        description: 'Dedicated to bringing designs to life with responsive state-of-the-art frontend code.',
+        description: 'Maintaining technical standards and institutional knowledge through clear documentation.',
+        links: [
+            { icon: Github, href: '#' },
+            { icon: Linkedin, href: '#' },
+        ]
     }
 ];
 
 export default function About() {
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#eef3ff] flex flex-col font-inter">
+        // Use min-h-screen to allow scroll on mobile, md:h-screen/overflow-hidden to lock on desktop
+        <div className="min-h-screen w-full flex flex-col bg-slate-50 font-sans selection:bg-teal-100 md:h-screen md:overflow-hidden">
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shrink-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-[#001f3f] transition-colors">
                         <ChevronLeft className="h-5 w-5" />
@@ -54,74 +75,90 @@ export default function About() {
                 </div>
             </header>
 
-            <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
-                <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            {/* Main Wrapper */}
+            {/* Added py-12 to provide space on mobile, md:justify-center to center vertically on desktop */}
+            <main className="flex-1 w-full max-w-7xl mx-auto flex flex-col md:justify-center px-6 py-12 md:py-6 overflow-y-auto md:overflow-hidden">
+
+                {/* Title Section */}
+                <div className="text-center mb-10 shrink-0">
                     <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-4xl md:text-5xl font-black text-[#001f3f] tracking-tight"
+                        className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight"
                     >
                         Meet the Creators
                     </motion.h2>
                     <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-lg text-slate-600 leading-relaxed"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-slate-500 mt-2 max-w-xl mx-auto text-sm md:text-base font-medium"
                     >
-                        We are the NC BSIT 4B team. A group of passionate students and developers dedicated to modernizing the institutional identification system.
+                        The team behind the Northeastern College ID Application System.
                     </motion.p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {/* Team Grid */}
+                {/* Responsive grid: 1 column on mobile, 4 on desktop */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
                     {TEAM_MEMBERS.map((member, index) => (
                         <motion.div
                             key={member.name}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 * (index + 2) }}
-                            className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:shadow-[#001f3f]/10 transition-all duration-300 group flex flex-col h-full"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.1 * (index + 1), duration: 0.5 }}
+                            className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col"
                         >
-                            <div className="relative mb-6 rounded-2xl overflow-hidden aspect-square border-4 border-slate-50">
+                            <div className="mb-4 rounded-2xl overflow-hidden aspect-[4/5] bg-slate-100">
                                 <img
                                     src={member.image}
                                     alt={member.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    className="w-full h-full object-cover"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
-                            <div className="flex-1 flex flex-col">
-                                <h3 className="text-lg font-black text-slate-800 tracking-tight leading-tight">{member.name}</h3>
-                                <p className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4 mt-1">{member.role}</p>
-                                <p className="text-sm text-slate-500 leading-relaxed flex-1">
+
+                            <div className="flex-1">
+                                <h3 className="font-black text-slate-900 text-sm">{member.name}</h3>
+                                <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mt-1 mb-2">
+                                    {member.role}
+                                </p>
+                                <p className="text-xs text-slate-500 leading-relaxed font-medium line-clamp-3">
                                     {member.description}
                                 </p>
+                            </div>
 
-                                <div className="flex items-center gap-3 mt-6 pt-6 border-t border-slate-100">
-                                    <button className="h-8 w-8 rounded-full bg-slate-50 hover:bg-[#001f3f] hover:text-white text-slate-400 flex items-center justify-center transition-colors">
-                                        <Github className="h-4 w-4" />
-                                    </button>
-                                    <button className="h-8 w-8 rounded-full bg-slate-50 hover:bg-[#001f3f] hover:text-white text-slate-400 flex items-center justify-center transition-colors">
-                                        <Linkedin className="h-4 w-4" />
-                                    </button>
-                                </div>
+                            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50 shrink-0">
+                                {member.links.map((link, i) => (
+                                    <SocialLink key={i} icon={<link.icon className="h-3 w-3" />} href={link.href} />
+                                ))}
                             </div>
                         </motion.div>
                     ))}
                 </div>
 
+                {/* Footer Credits */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
-                    className="mt-24 text-center"
+                    className="mt-10 text-center shrink-0 pb-6 md:pb-0"
                 >
-                    <div className="inline-block bg-[#001f3f] text-white px-8 py-4 rounded-2xl shadow-lg shadow-[#001f3f]/20">
-                        <p className="font-bold tracking-wide">Developed as a final project for Northeastern College.</p>
-                        <p className="text-sm text-blue-200 mt-1 opacity-80">© {new Date().getFullYear()} All Rights Reserved.</p>
-                    </div>
+                    <p className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">
+                        Northeastern College BSIT 4B · © {new Date().getFullYear()}
+                    </p>
                 </motion.div>
             </main>
         </div>
     );
 }
+
+const SocialLink = ({ icon, href }: { icon: React.ReactNode; href: string }) => (
+    <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:bg-teal-600 hover:text-white flex items-center justify-center transition-colors"
+    >
+        {icon}
+    </a>
+);
