@@ -12,21 +12,21 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://dashboard-ncnian-id.svizcarra.online',
-        // target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
+        // target: 'https://dashboard-ncnian-id.svizcarra.online',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
       '/bridge': {
-        target: 'https://glacial-samiyah-presutural.ngrok-free.dev',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/bridge/, ''),
       },
     },
     host: true,
-    port: 5173,
+    port: 5172,
     strictPort: true,
   },
   optimizeDeps: {

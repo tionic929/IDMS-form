@@ -35,7 +35,7 @@ return [
         ],
     ],
     'bridge' => [
-        'url' => env('BRIDGE_URL', 'https://glacial-samiyah-presutural.ngrok-free.dev'),
+        'url' => env('BRIDGE_URL', 'http://localhost:5000'),
     ],
 
 ];

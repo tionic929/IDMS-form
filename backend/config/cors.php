@@ -8,8 +8,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => $allowedOrigins ?: [
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
+        'http://localhost:5172',
+        'http://127.0.0.1:5172',
         'https://ncnian-id.svizcarra.online',
         'https://dashboard-ncnian-id.svizcarra.online',
     ],
