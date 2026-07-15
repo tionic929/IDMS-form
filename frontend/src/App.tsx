@@ -27,10 +27,15 @@ const About = lazy(() => import("./pages/About"));
 
 // Simple loading fallback for lazy components
 const PageLoader = () => (
-  <div className="flex h-full w-full items-center justify-center bg-white/80">
-    <div className="flex flex-col items-center gap-2">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-      <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Loading Section...</p>
+  <div className="flex h-full w-full items-center justify-center bg-white/80 min-h-[300px]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative h-10 w-10">
+        {/* Outer ring track */}
+        <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+        {/* Spinning indicator */}
+        <div className="absolute inset-0 animate-spin rounded-full border-4 border-[#001f3f] border-t-transparent"></div>
+      </div>
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001f3f]/60">Loading Section...</p>
     </div>
   </div>
 );
@@ -57,7 +62,19 @@ function App() {
   const isAdmin = user?.role === 'admin';
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-slate-50 p-4">
+        <div className="flex flex-col items-center max-w-sm text-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#001f3f] border-t-transparent"></div>
+          <div className="space-y-2">
+            <p className="text-sm font-black uppercase tracking-wider text-slate-500">Loading...</p>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Please note that this is only a live demo and loading may take several seconds to minutes as it uses Render's free service.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
