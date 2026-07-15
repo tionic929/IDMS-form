@@ -14,6 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->validateCsrfTokens(except: [
+            'api/students/check-existing',
+            'api/students',
+            'api/students/employee',
+            'api/send-otp',
+            'api/reports/verify',
+            'api/applications/*/approve',
+            'api/applications/*/reject',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
