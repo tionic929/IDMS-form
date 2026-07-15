@@ -150,7 +150,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // or ensure axios is configured to drop credentials
             
             // 4. Force a clean redirect
-            navigate("/login", { replace: true });
+            navigate("/", { replace: true });
         }
     }, [navigate]);
 

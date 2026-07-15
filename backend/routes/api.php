@@ -12,7 +12,7 @@ use App\Http\Controllers\AnalyticsController;
 /* |-------------------------------------------------------------------------- | API Routes |-------------------------------------------------------------------------- */
 
 // Public / Auth Routes
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/login-sec-sherwin-929', [AuthController::class, 'login'])->name('login');
 
 // Public ID Application Submission (5 requests/min per IP)
 Route::post('/students', [ApplicantsController::class, 'store'])->middleware('throttle:5,1')->name('applicants.store');

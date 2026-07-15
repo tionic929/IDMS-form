@@ -97,7 +97,7 @@ function App() {
               <Route path="/about" element={<About />} />
 
               <Route
-                path="/login"
+                path="/login-sec-sherwin-929"
                 element={user ? <Navigate to="/dashboard" replace /> : <Login />}
               />
 

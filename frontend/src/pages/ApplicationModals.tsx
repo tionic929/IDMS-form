@@ -244,16 +244,8 @@ export default function ApplicationModals({
               <b><span className="text-amber-600 animate-pulse">Waiting for approval...</span></b>
             </p>
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-left text-xs text-amber-800 space-y-1.5 shadow-sm">
-              <span className="font-bold uppercase tracking-wider block text-[10px]">Portfolio Demo Notice:</span>
-              <p className="leading-normal">
-                To test the approval flow, open another tab, go to the <a href="/login" target="_blank" className="font-bold underline text-[#001f3f] hover:opacity-85">Admin Login</a>, and sign in with:
-              </p>
-              <div className="bg-white/90 p-2.5 rounded-lg border border-amber-200/60 font-mono text-[10px] space-y-0.5 shadow-inner">
-                <div>Email: <span className="font-bold select-all">admin@svizcarra.online</span></div>
-                <div>Password: <span className="font-bold select-all">admin0929</span></div>
-              </div>
-              <p className="text-[10px] text-amber-600 leading-normal pt-1 border-t border-amber-200/50">
-                ⚠️ Loading and database queries may take several seconds as this demo runs on Render's free tier.
+              <p className="text-[10px] text-amber-600 leading-normal">
+                ⚠️ Note: Loading and database queries may take several seconds as this demo runs on Render's free tier.
               </p>
             </div>
           </div>
