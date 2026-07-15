@@ -203,7 +203,7 @@ class ApplicantsController extends Controller
     }
 
     /**
-     * Send OTP email via Google SMTP.
+     * Send OTP email via Resend API (bypasses Render SMTP block).
      */
     public function sendOtp(Request $request)
     {
@@ -213,7 +213,28 @@ class ApplicantsController extends Controller
         ]);
 
         try {
-            Mail::to($request->email)->send(new OtpMail($request->code));
+            $apiKey = env('RESEND_API_KEY');
+            if (!$apiKey) {
+                throw new \Exception('Resend API key is not configured.');
+            }
+
+            // Defaults to onboarding@resend.dev (used for testing before domain verification)
+            $fromAddress = env('RESEND_FROM_ADDRESS', 'onboarding@resend.dev');
+
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.resend.com/emails', [
+                'from' => $fromAddress,
+                'to' => [$request->email],
+                'subject' => 'Your OTP Verification Code',
+                'html' => '<p>Your OTP verification code is: <strong>' . $request->code . '</strong></p><p>This code will expire shortly.</p>',
+            ]);
+
+            if ($response->failed()) {
+                throw new \Exception($response->body());
+            }
+
             return response()->json(['message' => 'OTP sent successfully']);
         } catch (\Exception $e) {
             Log::error('OTP send failed', ['error' => $e->getMessage()]);
